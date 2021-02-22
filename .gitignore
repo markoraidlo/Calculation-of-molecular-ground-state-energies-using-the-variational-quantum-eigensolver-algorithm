@@ -1,0 +1,8 @@
+# Blacklist files/folders in same directory as the .gitignore file
+*
+
+# Whitelist the following extensions
+!*.py
+!*.ipynb
+!*.gitignore
+!*.md
