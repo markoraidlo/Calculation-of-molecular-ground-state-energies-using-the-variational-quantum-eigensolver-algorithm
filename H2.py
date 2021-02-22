@@ -71,8 +71,4 @@ for i in range(len(coefficients)):
         state_vector = result.final_state_vector
         #print(state_vector)
         #TODO: Toore skänn parameetrite jaoks 0 - 2pi
-        #TODO:
-
-
-
-
+        #TODO: Expectaion value kood

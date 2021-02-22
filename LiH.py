@@ -51,7 +51,3 @@ print("Length of UCCSD circuit: {}".format(len(UCCSD)))
 print("Number of measurement circuits: {}".format(len(measurement_circuits)))
 print("Time elapsed: {}".format(elapsed))
 #print(UCCSD.to_text_diagram(transpose=True))
-
-#TODO: Suurem kvantbitt, üks kahene ergastus, testi jupp
-#TODO: Kanvtbitt käsitsi test
-#TODO: Mõõtmine

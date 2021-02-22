@@ -7,7 +7,6 @@ from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
                          uccsd_convert_amplitude_format)
 from openfermionpsi4 import run_psi4
 
-#TODO: Git setup in VSC
 
 def get_qubit_operators(molecular_data):
     """Finds qubit operators for quantum circuit unitary.
@@ -92,25 +91,29 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                     q = qubits[int(basis[0])]
                     moment1 = moment1.with_operation(cirq.S(q)**(-1))
                     moment2 = moment2.with_operation(cirq.H(q))
-                    #TODO: Valet pidi
+                    
 
             sub_circuit.append(moment1)
             sub_circuit.append(moment2)
 
             #Exponent
             exponent = cirq.Circuit()
+            #Find max qubit:
+            max_qubit = 0
             for basis in term:
-                if basis[0] < (qubit_count - 1):
-                    exponent.append(cirq.CNOT(qubits[qubit_count - 1], qubits[basis[0]]),
-                                    strategy = cirq.InsertStrategy.NEW)
-                                    #TODO: CNOT valet pidi
-                                    #TODO: Gruppi viimase peal RZ
+                if basis[0] > max_qubit:
+                    max_qubit = basis[0]
 
-            #TODO: Complex check?
+            for basis in term:
+                if basis[0] < max_qubit:
+                    exponent.append(cirq.CNOT(qubits[basis[0]], qubits[max_qubit]),
+                                    strategy = cirq.InsertStrategy.NEW)     
+
+            #TODO: Coefficent check if right - 2
             rotate_z = cirq.rz(2 * terms_list[term].imag * temp_param)
 
             exponent_reverse = exponent**(-1)
-            exponent.append([rotate_z(qubits[qubit_count - 1]), exponent_reverse],
+            exponent.append([rotate_z(qubits[max_qubit]), exponent_reverse],
                                 strategy = cirq.InsertStrategy.NEW)
 
             sub_circuit.append(exponent)
@@ -126,8 +129,9 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                 
                 if basis[1] == 'Y':
                     q = qubits[int(basis[0])]
-                    moment3 = moment3.with_operation(cirq.S(q))
-                    moment4 = moment4.with_operation(cirq.H(q))
+                    moment3 = moment3.with_operation(cirq.H(q))
+                    moment4 = moment4.with_operation(cirq.S(q))
+                    
                 
             sub_circuit.append(moment3)
             sub_circuit.append(moment4)
