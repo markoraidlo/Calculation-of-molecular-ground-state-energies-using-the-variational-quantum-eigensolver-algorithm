@@ -1,15 +1,12 @@
 import cirq as cirq
 import numpy as numpy
 import qsimcirq as qsimcirq
-import sympy as sympy
-from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
-                         get_fermion_operator, jordan_wigner,
-                         uccsd_convert_amplitude_format)
+from openfermion import MolecularData
 from openfermionpsi4 import run_psi4
+import time
 
 from functions import *
 
-import time
 
 start = time.process_time()
 molecule_name = "BeH2"
