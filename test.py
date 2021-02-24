@@ -3,6 +3,8 @@ from openfermion import QubitOperator
 
 from functions import *
 
+
+#Ahela test
 qubit_operator = ((QubitOperator('X2 X3 Y10 X11', -0.125j)
 + 0.125j * QubitOperator('Y2 X3 X10 X11')
 + 0.125j * QubitOperator('Y2 Y3 Y10 X11')

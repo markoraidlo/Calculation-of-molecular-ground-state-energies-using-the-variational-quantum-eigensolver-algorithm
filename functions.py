@@ -180,6 +180,7 @@ def get_measurement_hamiltonian(molecular_data):
     return molecule_qubit_hamiltonian
 
 
+#Võib olla pole enam vaja
 def get_measurement_circuits(molecule_qubit_hamiltonian, qubit_count):
     """Creates list of measurement circuits from molecule hamiltonian for VQE
 
@@ -236,3 +237,77 @@ def get_measurement_circuits(molecule_qubit_hamiltonian, qubit_count):
         circuit_list.append(circuit)
     
     return coefficients, circuit_list
+
+
+def get_measurement_pauli_sums(molecule_qubit_hamiltonian, qubit_count):
+    """Creates PauliStrings from measurement Hamiltonian
+
+    Args:
+        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
+        qubit_count (int): Number of qubits
+
+    Returns:
+        [list(PauliSum)]: List of PauliSums.
+    """
+    coefficients = list()
+    pauli_string_list = list()
+    qubits = cirq.LineQubit.range(qubit_count)
+    terms = molecule_qubit_hamiltonian.terms
+    
+    #Different parts in Hamiltonian
+    for term in terms:
+        #Empty string
+        pauli_string = None
+
+        #No operator
+        if len(term) == 0:
+            pauli_string_list.append(None)
+            coefficients.append(terms[term])
+            continue
+        
+        for basis in term:
+            if basis[1] == 'X':
+                #If pauli_string doesnt contain a gate
+                if pauli_string is None:
+                    pauli_string = cirq.X(qubits[basis[0]])
+                #If it does
+                else:
+                    pauli_string += cirq.X(qubits[basis[0]])
+
+            elif basis[1] == 'Y':
+                if pauli_string is None:
+                    pauli_string = cirq.Y(qubits[basis[0]])
+                else:
+                    pauli_string += cirq.Y(qubits[basis[0]])
+                
+            elif basis[1] == 'Z':
+                if pauli_string is None:
+                    pauli_string = cirq.Z(qubits[basis[0]])
+                else:
+                    pauli_string += cirq.Z(qubits[basis[0]])
+
+        pauli_string_list.append(pauli_string)
+        coefficients.append(terms[term])
+
+    return coefficients, pauli_string_list
+
+
+def get_qubit_map(qubit_count):
+    """Creates qubit map for expectation_from_state_vector() function.
+    Sets qubit[j] with integer j.
+
+    Args:
+        qubit_count (int): Number of qubtis needed to map
+
+    Returns:
+        [dict]: {LineQubit: int} Qubitmap
+    """
+    qubit_map = dict()
+    qubits = cirq.LineQubit.range(qubit_count)
+    i = 0
+
+    for qubit in qubits:
+        qubit_map[qubit] = i
+        i += 1
+
+    return qubit_map
