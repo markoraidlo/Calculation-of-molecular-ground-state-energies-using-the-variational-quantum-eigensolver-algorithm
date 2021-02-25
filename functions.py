@@ -239,15 +239,16 @@ def get_measurement_circuits(molecule_qubit_hamiltonian, qubit_count):
     return coefficients, circuit_list
 
 
-def get_measurement_pauli_sums(molecule_qubit_hamiltonian, qubit_count):
-    """Creates PauliStrings from measurement Hamiltonian
+def get_measurement_pauli_strings(molecule_qubit_hamiltonian, qubit_count):
+    """Creates PauliStrings from measurement Hamiltonian.
 
     Args:
         molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
         qubit_count (int): Number of qubits
 
     Returns:
-        [list(PauliSum)]: List of PauliSums.
+        [list(int)]: List of coefficents.
+        [list(PauliString)]: List of PauliStrings.
     """
     coefficients = list()
     pauli_string_list = list()
@@ -272,24 +273,82 @@ def get_measurement_pauli_sums(molecule_qubit_hamiltonian, qubit_count):
                     pauli_string = cirq.X(qubits[basis[0]])
                 #If it does
                 else:
-                    pauli_string += cirq.X(qubits[basis[0]])
+                    pauli_string = pauli_string * cirq.X(qubits[basis[0]])
 
             elif basis[1] == 'Y':
                 if pauli_string is None:
                     pauli_string = cirq.Y(qubits[basis[0]])
                 else:
-                    pauli_string += cirq.Y(qubits[basis[0]])
+                    pauli_string = pauli_string * cirq.Y(qubits[basis[0]])
                 
             elif basis[1] == 'Z':
                 if pauli_string is None:
                     pauli_string = cirq.Z(qubits[basis[0]])
                 else:
-                    pauli_string += cirq.Z(qubits[basis[0]])
+                    pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
 
         pauli_string_list.append(pauli_string)
         coefficients.append(terms[term])
 
     return coefficients, pauli_string_list
+
+
+def get_measurement_single_sum(molecule_qubit_hamiltonian, qubit_count):
+    """Creates one single PauliSum from measurement Hamiltonian.
+
+    Args:
+        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
+        qubit_count (int): Number of qubits
+
+    Returns:
+        PauliSum: Single PauliSum
+    """
+    pauli_sum = None
+    qubits = cirq.LineQubit.range(qubit_count)
+    terms = molecule_qubit_hamiltonian.terms
+    
+    #Different parts in Hamiltonian
+    for term in terms:
+        #Empty string
+        pauli_string = None
+
+        #No operator
+        if len(term) == 0:
+            if pauli_sum is  None:
+                pauli_sum = cirq.I(qubits[0]) * terms[term].real
+            else:
+                pauli_sum += cirq.I(qubits)*terms[term].real
+            
+            continue
+        
+        for basis in term:
+            if basis[1] == 'X':
+                #If pauli_string doesnt contain a gate
+                if pauli_string is None:
+                    pauli_string = cirq.X(qubits[basis[0]])
+                #If it does
+                else:
+                    pauli_string = pauli_string * cirq.X(qubits[basis[0]])
+
+            elif basis[1] == 'Y':
+                if pauli_string is None:
+                    pauli_string = cirq.Y(qubits[basis[0]])
+                else:
+                    pauli_string = pauli_string * cirq.Y(qubits[basis[0]])
+                
+            elif basis[1] == 'Z':
+                if pauli_string is None:
+                    pauli_string = cirq.Z(qubits[basis[0]])
+                else:
+                    pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
+
+
+        if pauli_sum is not None:
+            pauli_sum += pauli_string * terms[term].real 
+        else:
+            pauli_sum =  pauli_string * terms[term].real 
+
+    return pauli_sum
 
 
 def get_qubit_map(qubit_count):
