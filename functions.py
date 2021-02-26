@@ -22,7 +22,6 @@ def get_qubit_operators(molecular_data):
     single_amplitudes = molecular_data.ccsd_single_amps
     double_amplitudes = molecular_data.ccsd_double_amps
 
-
     # Convert amplitudes into lists
     if (isinstance(single_amplitudes, numpy.ndarray) or isinstance(double_amplitudes, numpy.ndarray)):
         single_amplitudes_list, double_amplitudes_list = uccsd_convert_amplitude_format( single_amplitudes, double_amplitudes)
@@ -109,8 +108,7 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                     exponent.append(cirq.CNOT(qubits[basis[0]], qubits[max_qubit]),
                                     strategy = cirq.InsertStrategy.NEW)     
 
-            #TODO: Coefficent check if right - 2
-            rotate_z = cirq.rz(2 * terms_list[term].imag * temp_param)
+            rotate_z = cirq.rz(0.5 * terms_list[term].imag * temp_param)
 
             exponent_reverse = exponent**(-1)
             exponent.append([rotate_z(qubits[max_qubit]), exponent_reverse],
@@ -180,7 +178,88 @@ def get_measurement_hamiltonian(molecular_data):
     return molecule_qubit_hamiltonian
 
 
-#Võib olla pole enam vaja
+def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
+    """Creates one single PauliSum from measurement Hamiltonian.
+
+    Args:
+        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
+        qubit_count (int): Number of qubits
+
+    Returns:
+        PauliSum: Single PauliSum
+    """
+    pauli_sum = None
+    qubits = cirq.LineQubit.range(qubit_count)
+    terms = molecule_qubit_hamiltonian.terms
+    
+    #Different parts in Hamiltonian
+    for term in terms:
+        #Empty string
+        pauli_string = None
+
+        #I operator
+        if len(term) == 0:
+            if pauli_sum is  None:
+                pauli_sum = cirq.I(qubits[0]) * terms[term].real
+            else:
+                pauli_sum += cirq.I(qubits)*terms[term].real
+            
+            continue
+        
+        for basis in term:
+            if basis[1] == 'X':
+                #If pauli_string doesnt contain a gate
+                if pauli_string is None:
+                    pauli_string = cirq.X(qubits[basis[0]])
+                #If it does
+                else:
+                    pauli_string = pauli_string * cirq.X(qubits[basis[0]])
+
+            elif basis[1] == 'Y':
+                if pauli_string is None:
+                    pauli_string = cirq.Y(qubits[basis[0]])
+                else:
+                    pauli_string = pauli_string * cirq.Y(qubits[basis[0]])
+                
+            elif basis[1] == 'Z':
+                if pauli_string is None:
+                    pauli_string = cirq.Z(qubits[basis[0]])
+                else:
+                    pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
+
+
+        if pauli_sum is not None:
+            pauli_sum += pauli_string * terms[term].real 
+        else:
+            pauli_sum =  pauli_string * terms[term].real 
+
+    return pauli_sum
+
+
+def get_qubit_map(qubit_count):
+    """Creates qubit map for expectation_from_state_vector() function.
+    Sets qubit[j] with integer j.
+
+    Args:
+        qubit_count (int): Number of qubtis needed to map
+
+    Returns:
+        [dict]: {LineQubit: int} Qubitmap
+    """
+    qubit_map = dict()
+    qubits = cirq.LineQubit.range(qubit_count)
+    i = 0
+
+    for qubit in qubits:
+        qubit_map[qubit] = i
+        i += 1
+
+    return qubit_map
+
+#######################################
+#Asjad mida pole enam vaja: 
+#######################################
+
 def get_measurement_circuits(molecule_qubit_hamiltonian, qubit_count):
     """Creates list of measurement circuits from molecule hamiltonian for VQE
 
@@ -292,81 +371,6 @@ def get_measurement_pauli_strings(molecule_qubit_hamiltonian, qubit_count):
 
     return coefficients, pauli_string_list
 
-
-def get_measurement_single_sum(molecule_qubit_hamiltonian, qubit_count):
-    """Creates one single PauliSum from measurement Hamiltonian.
-
-    Args:
-        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
-        qubit_count (int): Number of qubits
-
-    Returns:
-        PauliSum: Single PauliSum
-    """
-    pauli_sum = None
-    qubits = cirq.LineQubit.range(qubit_count)
-    terms = molecule_qubit_hamiltonian.terms
-    
-    #Different parts in Hamiltonian
-    for term in terms:
-        #Empty string
-        pauli_string = None
-
-        #No operator
-        if len(term) == 0:
-            if pauli_sum is  None:
-                pauli_sum = cirq.I(qubits[0]) * terms[term].real
-            else:
-                pauli_sum += cirq.I(qubits)*terms[term].real
-            
-            continue
-        
-        for basis in term:
-            if basis[1] == 'X':
-                #If pauli_string doesnt contain a gate
-                if pauli_string is None:
-                    pauli_string = cirq.X(qubits[basis[0]])
-                #If it does
-                else:
-                    pauli_string = pauli_string * cirq.X(qubits[basis[0]])
-
-            elif basis[1] == 'Y':
-                if pauli_string is None:
-                    pauli_string = cirq.Y(qubits[basis[0]])
-                else:
-                    pauli_string = pauli_string * cirq.Y(qubits[basis[0]])
-                
-            elif basis[1] == 'Z':
-                if pauli_string is None:
-                    pauli_string = cirq.Z(qubits[basis[0]])
-                else:
-                    pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
-
-
-        if pauli_sum is not None:
-            pauli_sum += pauli_string * terms[term].real 
-        else:
-            pauli_sum =  pauli_string * terms[term].real 
-
-    return pauli_sum
-
-
-def get_qubit_map(qubit_count):
-    """Creates qubit map for expectation_from_state_vector() function.
-    Sets qubit[j] with integer j.
-
-    Args:
-        qubit_count (int): Number of qubtis needed to map
-
-    Returns:
-        [dict]: {LineQubit: int} Qubitmap
-    """
-    qubit_map = dict()
-    qubits = cirq.LineQubit.range(qubit_count)
-    i = 0
-
-    for qubit in qubits:
-        qubit_map[qubit] = i
-        i += 1
-
-    return qubit_map
+#######################################
+#######################################
+#######################################

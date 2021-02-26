@@ -25,3 +25,11 @@ for qubit in qubits:
 test_circuit.append(moment)
 
 print(test_circuit.to_text_diagram(transpose=True))
+
+
+
+result_malley = [[1, 2], [3, 4]]
+graph = numpy.array(result_malley)
+print(graph)
+graph = numpy.transpose(graph)
+print(graph)
