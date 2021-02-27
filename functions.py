@@ -108,7 +108,7 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                     exponent.append(cirq.CNOT(qubits[basis[0]], qubits[max_qubit]),
                                     strategy = cirq.InsertStrategy.NEW)     
 
-            rotate_z = cirq.rz(0.5 * terms_list[term].imag * temp_param)
+            rotate_z = cirq.rz(2 * terms_list[term].imag * temp_param)
 
             exponent_reverse = exponent**(-1)
             exponent.append([rotate_z(qubits[max_qubit]), exponent_reverse],
@@ -202,7 +202,7 @@ def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
             if pauli_sum is  None:
                 pauli_sum = cirq.I(qubits[0]) * terms[term].real
             else:
-                pauli_sum += cirq.I(qubits)*terms[term].real
+                pauli_sum += cirq.I(qubits) * terms[term].real
             
             continue
         
@@ -255,6 +255,8 @@ def get_qubit_map(qubit_count):
         i += 1
 
     return qubit_map
+
+
 
 #######################################
 #Asjad mida pole enam vaja: 

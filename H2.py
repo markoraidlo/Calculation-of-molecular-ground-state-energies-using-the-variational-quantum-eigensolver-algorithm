@@ -80,6 +80,24 @@ for i in range(shape_1):
         #Finding expectation value sum
         expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
         results_sum[i][j] = expectation_value
+
+###
+#siin failis sets global variable kasutada
+def get_expectation_value(*args):
+    resolver_dict = dict()
+    for k in range(len(args)):
+        resolver_dict.update({'t{}'.format(k): args[k]})
+
+    resolver = cirq.ParamResolver(resolver_dict)
+
+    #Main simulation call
+    result = simulator.simulate(UCCSD, resolver)
+    state_vector = result.final_state_vector
+
+    expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
+
+    return expectation_value
+###
         
 
 elapsed = time.process_time() - start
