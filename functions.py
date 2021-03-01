@@ -108,7 +108,7 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                     exponent.append(cirq.CNOT(qubits[basis[0]], qubits[max_qubit]),
                                     strategy = cirq.InsertStrategy.NEW)     
 
-            rotate_z = cirq.rz(2 * terms_list[term].imag * temp_param)
+            rotate_z = cirq.rz(2 * terms_list[term].imag *  temp_param)
 
             exponent_reverse = exponent**(-1)
             exponent.append([rotate_z(qubits[max_qubit]), exponent_reverse],
@@ -256,6 +256,33 @@ def get_qubit_map(qubit_count):
 
     return qubit_map
 
+
+def get_expectation_value(x, *args):
+    """For use with scipy minimize. 
+
+    Args:
+        x (list): List of parameters for circuit
+        *args (): simulator, UCCSD, pauli_sum, qubit_map
+
+    Returns:
+        float: Expectation value.
+    """
+    assert len(args) == 4
+    simulator, UCCSD, pauli_sum, qubit_map = args
+
+    resolver_dict = dict()
+    for k in range(len(x)):
+        resolver_dict.update({'t{}'.format(k): x[k]})
+
+    resolver = cirq.ParamResolver(resolver_dict)
+
+    #Main simulation call
+    result = simulator.simulate(UCCSD, resolver)
+    state_vector = result.final_state_vector
+
+    expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
+
+    return expectation_value.real
 
 
 #######################################

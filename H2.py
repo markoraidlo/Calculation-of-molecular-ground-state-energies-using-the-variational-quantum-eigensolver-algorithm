@@ -9,6 +9,7 @@ from functions import *
 #For results
 import matplotlib.pyplot as plt
 import time
+from scipy.optimize import minimize
 
 molecule_name = "H2"
 geometry = [[ 'H', [ 0, 0, 0]],
@@ -62,7 +63,7 @@ qubit_map = get_qubit_map(qubit_count)
 results_sum = numpy.zeros((shape_1, shape_2), dtype = complex) 
 pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 start = time.process_time()
-
+"""
 for i in range(shape_1):
     for j in range(shape_1):
         #ParamResolver
@@ -80,40 +81,28 @@ for i in range(shape_1):
         #Finding expectation value sum
         expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
         results_sum[i][j] = expectation_value
-
+"""
 ###
-#siin failis sets global variable kasutada
-def get_expectation_value(*args):
-    resolver_dict = dict()
-    for k in range(len(args)):
-        resolver_dict.update({'t{}'.format(k): args[k]})
 
-    resolver = cirq.ParamResolver(resolver_dict)
-
-    #Main simulation call
-    result = simulator.simulate(UCCSD, resolver)
-    state_vector = result.final_state_vector
-
-    expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
-
-    return expectation_value
-###
         
-
+"""
 elapsed = time.process_time() - start
 #Results:
 results_sum = results_sum.real
 print(results_sum)
 print("Time elapsed finding expectation values: {} s".format(elapsed))
-
-print(hamiltonian)
-print(pauli_sum)
+"""
 
 
+"""
 #Imgae plot
 plt.matshow(results_sum);
 plt.colorbar()
 plt.savefig('result_sum.png')
+"""
 
-print("Minimum single sum: {}".format(results_sum.min()))
+res = minimize(get_expectation_value, x0 = (0, 0), 
+args = (simulator, UCCSD, pauli_sum, qubit_map))
+
+print("Minimum single sum: {}".format(res))
 #-1.13
