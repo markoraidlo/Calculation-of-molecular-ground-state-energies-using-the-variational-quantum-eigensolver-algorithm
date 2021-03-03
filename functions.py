@@ -26,7 +26,6 @@ def get_qubit_operators(molecular_data):
     if (isinstance(single_amplitudes, numpy.ndarray) or isinstance(double_amplitudes, numpy.ndarray)):
         single_amplitudes_list, double_amplitudes_list = uccsd_convert_amplitude_format( single_amplitudes, double_amplitudes)
     
-    
     fermion_operator_list = list()
     #Single excitations
     for (i, j), t_ik in single_amplitudes_list:
@@ -108,7 +107,7 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
                     exponent.append(cirq.CNOT(qubits[basis[0]], qubits[max_qubit]),
                                     strategy = cirq.InsertStrategy.NEW)     
 
-            rotate_z = cirq.rz(2 * terms_list[term].imag *  temp_param)
+            rotate_z = cirq.rz(-2 * terms_list[term].imag *  temp_param)
 
             exponent_reverse = exponent**(-1)
             exponent.append([rotate_z(qubits[max_qubit]), exponent_reverse],
@@ -150,7 +149,7 @@ def initial_hartree_fock(electron_count):
     """
 
     circuit = cirq.Circuit()
-    qubits = cirq.LineQubit.range(electron_count)
+    qubits = cirq.LineQubit.range(4)
 
     i = 0
     while i < electron_count:
@@ -172,8 +171,9 @@ def get_measurement_hamiltonian(molecular_data):
 
     one_body_integrals = molecular_data.one_body_integrals
     two_body_integrals = molecular_data.two_body_integrals
+    orbitals = molecular_data.canonical_orbitals
     molecular_data.save()
-    molecule_qubit_hamiltonian = bravyi_kitaev(get_fermion_operator(molecular_data.get_molecular_hamiltonian()))
+    molecule_qubit_hamiltonian = jordan_wigner(get_fermion_operator(molecular_data.get_molecular_hamiltonian()))
     
     return molecule_qubit_hamiltonian
 

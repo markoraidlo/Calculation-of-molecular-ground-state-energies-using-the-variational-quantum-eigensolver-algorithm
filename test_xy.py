@@ -19,7 +19,7 @@ charge = 0
 result_x = list()
 result_y = list()
 
-for length in numpy.linspace(0.3, 3, 25):
+for length in numpy.linspace(0.3, 3, 40):
 
     geometry = [[ 'H', [ 0, 0, 0]],
                 [ 'H', [ 0, 0, length]]]
@@ -34,7 +34,17 @@ for length in numpy.linspace(0.3, 3, 25):
                             run_ccsd=True,
                             run_fci=True)
 
-    qubit_operator_list = get_qubit_operators(molecular_data)
+    #UnboundLocalError: local variable 'single_amplitudes_list' referenced before assignment
+    while True:
+        try:
+            qubit_operator_list = get_qubit_operators(molecular_data)
+            break
+        except UnboundLocalError as error:
+            print(error)
+            pass
+        except Exception as exc:
+            print(exc)
+            pass
 
     electron_count = molecular_data.n_electrons
     qubit_count = molecular_data.n_qubits
@@ -53,13 +63,15 @@ for length in numpy.linspace(0.3, 3, 25):
 
     pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
-    res = minimize(get_expectation_value, x0 = (0, 0), 
-    args = (simulator, UCCSD, pauli_sum, qubit_map))
+    res = minimize(get_expectation_value, x0 = [0, 0], method = 'Nelder-Mead',
+                    args = (simulator, UCCSD, pauli_sum, qubit_map),
+                    options = {'disp' : True})
 
     result_x.append(length )
     result_y.append(res.fun )
 
     print("Length: {}. Minimum: {}".format(length, res.fun))
+    #print(res)
             
 
 plt.plot(result_x, result_y)
