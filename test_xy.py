@@ -63,7 +63,7 @@ for length in numpy.linspace(0.3, 3, 40):
 
     pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
-    res = minimize(get_expectation_value, x0 = [0, 0], method = 'Nelder-Mead',
+    res = minimize(get_expectation_value, x0 = [1, -1], method = 'Nelder-Mead',
                     args = (simulator, UCCSD, pauli_sum, qubit_map),
                     options = {'disp' : True})
 

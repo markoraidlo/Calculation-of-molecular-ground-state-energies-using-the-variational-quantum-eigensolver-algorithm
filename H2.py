@@ -101,8 +101,9 @@ plt.colorbar()
 plt.savefig('result_sum.png')
 """
 
-res = minimize(get_expectation_value, x0 = (0, 0), 
-args = (simulator, UCCSD, pauli_sum, qubit_map))
+res = minimize(get_expectation_value, x0 = (0, 0), method = 'Nelder-Mead',
+                    args = (simulator, UCCSD, pauli_sum, qubit_map),
+                    options = {'disp' : True})
 
 print("Minimum single sum: {}".format(res))
 #-1.13

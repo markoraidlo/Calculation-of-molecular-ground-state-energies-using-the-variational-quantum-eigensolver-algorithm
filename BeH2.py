@@ -31,6 +31,7 @@ qubit_operator_list = get_qubit_operators(molecular_data)
 
 electron_count = molecular_data.n_electrons
 qubit_count = molecular_data.n_qubits
+#.n_orbitals
 
 UCCSD = initial_hartree_fock(electron_count)
 UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')

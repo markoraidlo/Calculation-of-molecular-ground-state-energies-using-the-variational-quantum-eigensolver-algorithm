@@ -17,7 +17,7 @@ charge = 0
 
 result_malley = list()
 
-for length in numpy.linspace(0.5, 1.4, 30):
+for length in numpy.linspace(0.5, 3, 30):
 
     geometry = [[ 'H', [ 0, 0, 0]],
                 [ 'H', [ 0, 0, length]]]
@@ -38,7 +38,7 @@ for length in numpy.linspace(0.5, 1.4, 30):
     qubit_count = molecular_data.n_qubits
 
     UCCSD = initial_hartree_fock(electron_count)
-    UNITARY = create_UCCSD([qubit_operator_list[0]], qubit_count, 't')
+    UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
     UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
     hamiltonian = get_measurement_hamiltonian(molecular_data)
@@ -73,9 +73,10 @@ for length in numpy.linspace(0.5, 1.4, 30):
     for i in range(shape_1):
         #for j in range(shape_1):
         #ParamResolver
-        param_list = [2 * numpy.pi * i / shape_1 - numpy.pi]
+        param_list = [2 * numpy.pi * i / shape_1 - numpy.pi, 2 * numpy.pi * i / shape_1 - numpy.pi]
         #2 * numpy.pi * j / shape_2  - numpy.pi]
         #print(param_list)
+        """
         resolver_dict = dict()
         for k in range(len(param_list)):
             resolver_dict.update({'t{}'.format(k): param_list[k]})
@@ -87,7 +88,8 @@ for length in numpy.linspace(0.5, 1.4, 30):
 
         #Finding expectation value sum
         expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
-        results_sum[i] = expectation_value
+        """
+        results_sum[i] = get_expectation_value(param_list, simulator, UCCSD, pauli_sum, qubit_map)
             
 
     elapsed = time.process_time() - start
