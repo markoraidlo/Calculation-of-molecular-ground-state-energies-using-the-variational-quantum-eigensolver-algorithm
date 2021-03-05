@@ -83,21 +83,21 @@ optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_ope
                     args = (simulator, UCCSD, pauli_sum, qubit_map),
                     options = {'disp' : True})
 
-time = time.process_time() - start
+end_time = time.process_time() - start
 
 
 energy_min = optimize_result.fun
 nfev = optimize_result.nfev
 nit = optimize_result.nit
 print("Minimum energy: {}".format(energy_min))
-print("Time elapsed: {} s".format(time))
+print("Time elapsed: {} s".format(end_time))
 print("Number of evaluations of the objective function: {}".format(nfev))
 print("Number of iterations performed by the optimizer: {}".format(nit))
 print("#####################################################################")
 
 ############ Data save
 results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit_count, qubit_op_count, 
-                len(UCCSD), energy_min, time, nfev, nit]
+                len(UCCSD), energy_min, end_time, nfev, nit]
 results.to_csv("VQE_results.csv")
 
 
@@ -163,21 +163,21 @@ optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_ope
                     args = (simulator, UCCSD, pauli_sum, qubit_map),
                     options = {'disp' : True})
 
-time = time.process_time() - start
+end_time = time.process_time() - start
 
 
 energy_min = optimize_result.fun
 nfev = optimize_result.nfev
 nit = optimize_result.nit
 print("Minimum energy: {}".format(energy_min))
-print("Time elapsed: {} s".format(time))
+print("Time elapsed: {} s".format(end_time))
 print("Number of evaluations of the objective function: {}".format(nfev))
 print("Number of iterations performed by the optimizer: {}".format(nit))
 print("#####################################################################")
 
 ############ Data save
 results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit_count, qubit_op_count, 
-                len(UCCSD), energy_min, time, nfev, nit]
+                len(UCCSD), energy_min, end_time, nfev, nit]
 results.to_csv("VQE_results.csv")
 
 
@@ -245,21 +245,21 @@ optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_ope
                     args = (simulator, UCCSD, pauli_sum, qubit_map),
                     options = {'disp' : True})
 
-time = time.process_time() - start
+end_time = time.process_time() - start
 
 
 energy_min = optimize_result.fun
 nfev = optimize_result.nfev
 nit = optimize_result.nit
 print("Minimum energy: {}".format(energy_min))
-print("Time elapsed: {} s".format(time))
+print("Time elapsed: {} s".format(end_time))
 print("Number of evaluations of the objective function: {}".format(nfev))
 print("Number of iterations performed by the optimizer: {}".format(nit))
 print("#####################################################################")
 
 ############ Data save
 results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit_count, qubit_op_count, 
-                len(UCCSD), energy_min, time, nfev, nit]
+                len(UCCSD), energy_min, end_time, nfev, nit]
 results.to_csv("VQE_results.csv")
                         
 
@@ -328,21 +328,21 @@ optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_ope
                     args = (simulator, UCCSD, pauli_sum, qubit_map),
                     options = {'disp' : True})
 
-time = time.process_time() - start
+end_time = time.process_time() - start
 
 
 energy_min = optimize_result.fun
 nfev = optimize_result.nfev
 nit = optimize_result.nit
 print("Minimum energy: {}".format(energy_min))
-print("Time elapsed: {} s".format(time))
+print("Time elapsed: {} s".format(end_time))
 print("Number of evaluations of the objective function: {}".format(nfev))
 print("Number of iterations performed by the optimizer: {}".format(nit))
 print("#####################################################################")
 
 ############ Data save
 results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit_count, qubit_op_count, 
-                len(UCCSD), energy_min, time, nfev, nit]
+                len(UCCSD), energy_min, end_time, nfev, nit]
 results.to_csv("VQE_results.csv")
 
 
