@@ -24,7 +24,7 @@ results = pandas.DataFrame(columns = columns)
 ########################################################################
 ###         H2 min
 ########################################################################
-
+"""
 ############ Molecular data and prep
 molecule_name = "H2"
 geometry = [[ 'H', [ 0, 0, 0]],
@@ -47,7 +47,7 @@ qubit_count = molecular_data.n_qubits
 orbital_count = molecular_data.n_orbitals
 qubit_op_count = len(qubit_operator_list)
 
-UCCSD = initial_hartree_fock(electron_count)
+UCCSD = initial_hartree_fock(electron_count, qubit_count)
 UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
 UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -127,7 +127,7 @@ qubit_count = molecular_data.n_qubits
 orbital_count = molecular_data.n_orbitals
 qubit_op_count = len(qubit_operator_list)
 
-UCCSD = initial_hartree_fock(electron_count)
+UCCSD = initial_hartree_fock(electron_count, qubit_count)
 UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
 UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -209,7 +209,7 @@ qubit_count = molecular_data.n_qubits
 orbital_count = molecular_data.n_orbitals
 qubit_op_count = len(qubit_operator_list)
 
-UCCSD = initial_hartree_fock(electron_count)
+UCCSD = initial_hartree_fock(electron_count, qubit_count)
 UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
 UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -292,7 +292,7 @@ qubit_count = molecular_data.n_qubits
 orbital_count = molecular_data.n_orbitals
 qubit_op_count = len(qubit_operator_list)
 
-UCCSD = initial_hartree_fock(electron_count)
+UCCSD = initial_hartree_fock(electron_count, qubit_count)
 UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
 UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -345,6 +345,7 @@ results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit
                 len(UCCSD), energy_min, end_time, nfev, nit]
 results.to_csv("VQE_results.csv")
 
+"""
 
 ########################################################################
 ###         H2 scan
@@ -352,7 +353,7 @@ results.to_csv("VQE_results.csv")
 
 result_length = list()
 result_energy = list()
-
+molecule_name = "H2"
 for length in numpy.linspace(0.2, 3, 50):
 
     geometry = [[ 'H', [ 0, 0, 0]],
@@ -383,7 +384,7 @@ for length in numpy.linspace(0.2, 3, 50):
     electron_count = molecular_data.n_electrons
     qubit_count = molecular_data.n_qubits
 
-    UCCSD = initial_hartree_fock(electron_count)
+    UCCSD = initial_hartree_fock(electron_count, qubit_count)
     UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
     UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -397,9 +398,14 @@ for length in numpy.linspace(0.2, 3, 50):
 
     pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
+    bounds = list()
+    for i in range(len(qubit_operator_list)):
+        bounds.append([-numpy.pi, numpy.pi])
+
     res = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                     , method = 'TNC', bounds = bounds,
                     args = (simulator, UCCSD, pauli_sum, qubit_map))
+    print(res)
 
     result_length.append(length)
     result_energy.append(res.fun)
@@ -452,7 +458,7 @@ for length in numpy.linspace(0.2, 3, 50):
     electron_count = molecular_data.n_electrons
     qubit_count = molecular_data.n_qubits
 
-    UCCSD = initial_hartree_fock(electron_count)
+    UCCSD = initial_hartree_fock(electron_count, qubit_count)
     UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
     UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -466,9 +472,15 @@ for length in numpy.linspace(0.2, 3, 50):
 
     pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
+    bounds = list()
+    for i in range(len(qubit_operator_list)):
+        bounds.append([-numpy.pi, numpy.pi])
+
     res = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                     , method = 'TNC', bounds = bounds,
                     args = (simulator, UCCSD, pauli_sum, qubit_map))
+
+    print(res)
 
     result_length.append(length)
     result_energy.append(res.fun)
@@ -523,7 +535,7 @@ for i in range(shape_1):
         electron_count = molecular_data.n_electrons
         qubit_count = molecular_data.n_qubits
 
-        UCCSD = initial_hartree_fock(electron_count)
+        UCCSD = initial_hartree_fock(electron_count, qubit_count)
         UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
         UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
 
@@ -537,14 +549,20 @@ for i in range(shape_1):
 
         pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
+        bounds = list()
+        for i in range(len(qubit_operator_list)):
+            bounds.append([-numpy.pi, numpy.pi])
+
         res = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                         , method = 'TNC', bounds = bounds,
                         args = (simulator, UCCSD, pauli_sum, qubit_map))
 
+        print(res)
+
         BeH2_scan[i][j] = res.fun
 
 print("###########################################")
-print("LiH Scan complete.")
+print("BeH2 Scan complete.")
 print("###########################################")       
 BeH2_scan = BeH2_scan.real
 numpy.savetxt('BeH2_scan.csv', BeH2_scan, delimiter=',')

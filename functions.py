@@ -40,11 +40,26 @@ def get_qubit_operators(molecular_data):
         fermion_operator_list.append(ferm_op)
         
     #Jordan-Wigner transform
-    quantum_operator_list = list()
+    qubit_operator_list = list()
     for fermion_operator in fermion_operator_list:
-        quantum_operator_list.append(jordan_wigner(fermion_operator))
+        qubit_operator_list.append(jordan_wigner(fermion_operator))
+
+    #Optimization
+    new_list = list()
+    for op in qubit_operator_list:
+        if len(new_list) == 0:
+            new_list.append(op)
+            
+        for checked in new_list:
+            if checked == op:
+                break
+            else:
+                if new_list.index(checked) == len(new_list) - 1:
+                    new_list.append(op)
+
+    qubit_operator_list = new_list
     
-    return quantum_operator_list
+    return qubit_operator_list
 
 
 def create_UCCSD(qubit_operator_list, qubit_count, param):
@@ -138,18 +153,19 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
     return circuit
 
 
-def initial_hartree_fock(electron_count):
+def initial_hartree_fock(electron_count, qubit_count):
     """Creates circuit for initial Hartree-Fock state.
 
     Args:
         electron_count (int): Number of electrons in molecule
+        qubit_count (int): Number of qubits for circuit
 
     Returns:
         Circuit: Start of the UCCSD circuit
     """
 
     circuit = cirq.Circuit()
-    qubits = cirq.LineQubit.range(4)
+    qubits = cirq.LineQubit.range(qubit_count)
 
     i = 0
     while i < electron_count:
@@ -279,6 +295,9 @@ def get_expectation_value(x, *args):
     #Main simulation call
     result = simulator.simulate(UCCSD, resolver)
     state_vector = result.final_state_vector
+
+    norm = numpy.linalg.norm(state_vector)
+    state_vector = state_vector / norm
 
     expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
 
