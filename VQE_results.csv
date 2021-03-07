@@ -1,0 +1,3 @@
+,Molecule,Electrons,Orbitals,Qubits,Qubit op,Circ len,Min energy,Time,nfev,nit
+0,H2O,10,7,14,66,6809,-74.96447381961565,12752.030865411,1675,2
+1,BeH2,6,7,14,34,3245,-15.56033064369309,4832.965215976998,1505,2

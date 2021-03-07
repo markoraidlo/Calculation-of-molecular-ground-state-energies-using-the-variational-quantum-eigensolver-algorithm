@@ -1,0 +1,160 @@
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 287, in <module>
+    exec(content)
+  File "<string>", line 169, in <module>
+
+NameError: name 'fci_energy' is not defined
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+                print('WARNING: FCI calculation failed.')
+            else:
+                raise
+        finally:
+           
+-->         molecule.fci_energy = fci_energy
+           
+            fci_one_rdm_a = numpy.array(fci_wavefunction.get_opdm(
+                0, 0, 'A', True)).reshape(molecule.n_orbitals, molecule.n_orbitals)
+            fci_one_rdm_b = numpy.array(fci_wavefunction.get_opdm(
+                0, 0, 'B', True)).reshape(molecule.n_orbitals, molecule.n_orbitals)
+
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 287, in <module>
+    exec(content)
+  File "<string>", line 169, in <module>
+
+NameError: name 'fci_energy' is not defined
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+                print('WARNING: FCI calculation failed.')
+            else:
+                raise
+        finally:
+           
+-->         molecule.fci_energy = fci_energy
+           
+            fci_one_rdm_a = numpy.array(fci_wavefunction.get_opdm(
+                0, 0, 'A', True)).reshape(molecule.n_orbitals, molecule.n_orbitals)
+            fci_one_rdm_b = numpy.array(fci_wavefunction.get_opdm(
+                0, 0, 'B', True)).reshape(molecule.n_orbitals, molecule.n_orbitals)
+
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 287, in <module>
+    exec(content)
+  File "<string>", line 120, in <module>
+  File "/usr/local/psi4/lib/psi4/driver/driver.py", line 556, in energy
+    wfn = procedures['energy'][lowername](lowername, molecule=molecule, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 950, in select_cisd
+    return func(name, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 2998, in run_detci
+    ciwfn = core.detci(ref_wfn)
+
+RuntimeError: 
+Fatal Error: CIWavefunction: Iterations did not converge!
+Error occurred in file: /home/veiko/project/psi4/src/psi4-1.3.2/psi4/src/psi4/detci/ciwave.cc on line: 377
+The most recent 5 function calls were:
+
+psi::PsiException::PsiException(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char const*, int)
+
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+            molecule.mp2_energy = mp2_energy
+            molecule.save()
+    if True:
+        core.set_global_option("QC_MODULE", "detci")
+        try:
+-->         cisd_energy, cisd_wavefunction = energy('cisd', return_wfn=True)
+            if False:
+                print('CISD energy for {} ({} electrons) is {}.'.format(
+                    molecule.name, molecule.n_electrons, cisd_energy))
+        except:
+            if False:
+
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 287, in <module>
+    exec(content)
+  File "<string>", line 120, in <module>
+  File "/usr/local/psi4/lib/psi4/driver/driver.py", line 556, in energy
+    wfn = procedures['energy'][lowername](lowername, molecule=molecule, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 950, in select_cisd
+    return func(name, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 2998, in run_detci
+    ciwfn = core.detci(ref_wfn)
+
+RuntimeError: 
+Fatal Error: CIWavefunction: Iterations did not converge!
+Error occurred in file: /home/veiko/project/psi4/src/psi4-1.3.2/psi4/src/psi4/detci/ciwave.cc on line: 377
+The most recent 5 function calls were:
+
+psi::PsiException::PsiException(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char const*, int)
+
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+            molecule.mp2_energy = mp2_energy
+            molecule.save()
+    if True:
+        core.set_global_option("QC_MODULE", "detci")
+        try:
+-->         cisd_energy, cisd_wavefunction = energy('cisd', return_wfn=True)
+            if False:
+                print('CISD energy for {} ({} electrons) is {}.'.format(
+                    molecule.name, molecule.n_electrons, cisd_energy))
+        except:
+            if False:
+
+Traceback (most recent call last):
+  File "/usr/local/psi4/bin/psi4", line 287, in <module>
+    exec(content)
+  File "<string>", line 120, in <module>
+  File "/usr/local/psi4/lib/psi4/driver/driver.py", line 556, in energy
+    wfn = procedures['energy'][lowername](lowername, molecule=molecule, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 950, in select_cisd
+    return func(name, **kwargs)
+  File "/usr/local/psi4/lib/psi4/driver/procrouting/proc.py", line 2998, in run_detci
+    ciwfn = core.detci(ref_wfn)
+
+RuntimeError: 
+Fatal Error: CIWavefunction: Iterations did not converge!
+Error occurred in file: /home/veiko/project/psi4/src/psi4-1.3.2/psi4/src/psi4/detci/ciwave.cc on line: 377
+The most recent 5 function calls were:
+
+psi::PsiException::PsiException(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, char const*, int)
+
+
+Printing out the relevant lines from the Psithon --> Python processed input file:
+            molecule.mp2_energy = mp2_energy
+            molecule.save()
+    if True:
+        core.set_global_option("QC_MODULE", "detci")
+        try:
+-->         cisd_energy, cisd_wavefunction = energy('cisd', return_wfn=True)
+            if False:
+                print('CISD energy for {} ({} electrons) is {}.'.format(
+                    molecule.name, molecule.n_electrons, cisd_energy))
+        except:
+            if False:
+
+local variable 'single_amplitudes_list' referenced before assignment
+########################################
+ERROR FIX: length = 1.501010101011101
+########################################
+local variable 'single_amplitudes_list' referenced before assignment
+########################################
+ERROR FIX: length = 1.7838383838393839
+########################################
+local variable 'single_amplitudes_list' referenced before assignment
+########################################
+ERROR FIX: length = 1.8404040404050404
+########################################
+local variable 'single_amplitudes_list' referenced before assignment
+########################################
+ERROR FIX: length = 1.8969696969706968
+########################################
+local variable 'single_amplitudes_list' referenced before assignment
+########################################
+ERROR FIX: length = 2.6606060606070607
+########################################
+[(2, 2, 4, 1, 89, 0.16417475609636975, 0.46206122000000005, 22, 3, 0.2), (2, 2, 4, 1, 89, -0.13036136692568687, 0.431820769, 22, 3, 0.22828282828282828), (2, 2, 4, 1, 89, -0.3562434704442383, 0.5037030429999999, 26, 2, 0.25656565656565655), (2, 2, 4, 1, 89, -0.5257012550884193, 0.48821043499999994, 26, 2, 0.28484848484848485), (2, 2, 4, 1, 89, -0.6506859860693184, 0.385091933, 16, 2, 0.31313131313131315), (2, 2, 4, 1, 89, -0.7536735975829856, 0.4756840889999999, 16, 2, 0.3414141414141414), (2, 2, 4, 1, 89, -0.8442990971066672, 1.0368350929999999, 72, 3, 0.3696969696969697), (2, 2, 4, 1, 89, -0.9100016381466015, 0.7072239029999999, 44, 3, 0.397979797979798), (2, 2, 4, 1, 89, -0.9521425649091443, 0.285560414, 10, 2, 0.42626262626262623), (2, 2, 4, 1, 89, -0.9973105162887276, 1.11217108, 76, 3, 0.45454545454545453), (2, 2, 4, 1, 89, -1.034356628903272, 0.421930127, 20, 2, 0.48282828282828283), (2, 2, 4, 1, 89, -1.052463159642751, 0.641857502, 40, 2, 0.5111111111111111), (2, 2, 4, 1, 89, -1.0836658954648506, 1.954745352, 150, 2, 0.5393939393939393), (2, 2, 4, 1, 89, -1.1005953211553412, 1.3275732, 60, 1, 0.5676767676767677), (2, 2, 4, 1, 89, -1.0997677386162874, 0.696151791, 44, 3, 0.595959595959596), (2, 2, 4, 1, 89, -1.1099033788983088, 1.590623197, 92, 3, 0.6242424242424243), (2, 2, 4, 1, 89, -1.122125282961994, 0.48886107700000003, 22, 3, 0.6525252525252525), (2, 2, 4, 1, 89, -1.1164292550733292, 0.554059569, 30, 3, 0.6808080808080808), (2, 2, 4, 1, 89, -1.1349460870186132, 0.564803753, 20, 2, 0.709090909090909), (2, 2, 4, 1, 89, -1.1360416015379275, 1.0968185769999999, 78, 3, 0.7373737373737375), (2, 2, 4, 1, 89, -1.1357083439724316, 0.416658447, 20, 2, 0.7656565656565657), (2, 2, 4, 1, 89, -1.1341697353171394, 0.418293386, 20, 2, 0.793939393939394), (2, 2, 4, 1, 89, -1.1074671917025836, 0.30878075000000005, 10, 2, 0.8222222222222222), (2, 2, 4, 1, 89, -1.1282023433937893, 0.997727515, 68, 3, 0.8505050505050504), (2, 2, 4, 1, 89, -1.1240655928754433, 1.561098487, 76, 3, 0.8787878787878787), (2, 2, 4, 1, 89, -1.1125325540840978, 0.497800825, 26, 2, 0.9070707070707071), (2, 2, 4, 1, 89, -1.0833800261729734, 0.339220258, 14, 2, 0.9353535353535354), (2, 2, 4, 1, 89, -1.0760582245520451, 0.473396967, 24, 3, 0.9636363636363636), (2, 2, 4, 1, 89, -1.0683655533178482, 0.33951032000000003, 14, 2, 0.9919191919191919), (2, 2, 4, 1, 89, -1.0940163479883633, 0.28820032900000003, 10, 1, 1.02020202020202), (2, 2, 4, 1, 89, -1.081004531117981, 0.434094394, 18, 2, 1.0484848484848484), (2, 2, 4, 1, 89, -1.0571112223901942, 0.361737941, 10, 1, 1.0767676767676768), (2, 2, 4, 1, 89, -1.0668235237875572, 0.21558466699999995, 18, 2, 1.105050505050505), (2, 2, 4, 1, 89, -1.0261955500824338, 0.278272204, 22, 3, 1.1333333333333333), (2, 2, 4, 1, 89, -1.0625330800207913, 1.9327296379999999, 130, 3, 1.1616161616161615), (2, 2, 4, 1, 89, -1.0523424413350364, 0.21639906699999994, 18, 2, 1.1898989898989898), (2, 2, 4, 1, 89, -1.0473417282452677, 0.273264947, 22, 3, 1.218181818181818), (2, 2, 4, 1, 89, -1.020459915001872, 0.40419183599999997, 20, 2, 1.2464646464646463), (2, 2, 4, 1, 89, -0.9814170573196437, 0.24356467499999995, 20, 3, 1.2747474747474747), (2, 2, 4, 1, 89, -0.9944238729281646, 0.29283537700000006, 24, 2, 1.303030303030303), (2, 2, 4, 1, 89, -1.0080128621204898, 0.357049877, 28, 2, 1.3313131313131312), (2, 2, 4, 1, 89, -0.9544246704485269, 0.24310804999999996, 20, 3, 1.3595959595959595), (2, 2, 4, 1, 89, -0.9474117052679563, 0.36426458600000006, 30, 4, 1.3878787878787877), (2, 2, 4, 1, 89, -0.9364599667601301, 0.575917733, 48, 3, 1.416161616161616), (2, 2, 4, 1, 89, -1.0049581365626097, 0.31741471499999996, 26, 2, 1.4444444444444444), (2, 2, 4, 1, 89, -0.9709737294118215, 0.097943475, 8, 1, 1.4727272727272727), (2, 2, 4, 1, 89, -0.9190194968776779, 1.066178374, 64, 2, 1.501010101011101), (2, 2, 4, 1, 89, -0.9021739419553725, 0.388478326, 32, 3, 1.5292929292929291), (2, 2, 4, 1, 89, -0.8942665389210326, 0.269409319, 22, 3, 1.5575757575757574), (2, 2, 4, 1, 89, -0.9839148342982704, 0.23980063400000007, 20, 2, 1.5858585858585856), (2, 2, 4, 1, 89, -0.8781609280428202, 0.23908666300000003, 20, 3, 1.614141414141414), (2, 2, 4, 1, 89, -0.977528976437873, 0.371673224, 30, 3, 1.6424242424242423), (2, 2, 4, 1, 89, -0.8621707076248315, 0.12211130599999998, 10, 2, 1.6707070707070706), (2, 2, 4, 1, 89, -0.9679557429751783, 0.36406365799999996, 18, 2, 1.6989898989898988), (2, 2, 4, 1, 89, -0.9641160149164769, 0.289029176, 24, 3, 1.727272727272727), (2, 2, 4, 1, 89, -0.9076154695975054, 0.34010039700000005, 28, 3, 1.7555555555555553), (2, 2, 4, 1, 89, -0.9612929592584009, 0.245439968, 20, 2, 1.7838383838393839), (2, 2, 4, 1, 89, -0.8258965501423524, 0.643739845, 54, 4, 1.812121212121212), (2, 2, 4, 1, 89, -0.8191084808319932, 0.17099341899999998, 14, 2, 1.8404040404050404), (2, 2, 4, 1, 89, -0.8124872428335063, 0.510640866, 42, 4, 1.8686868686868685), (2, 2, 4, 1, 89, -0.8063867394100933, 0.314711422, 26, 3, 1.8969696969706968), (2, 2, 4, 1, 89, -0.9404638037713484, 0.8641343850000001, 72, 3, 1.925252525252525), (2, 2, 4, 1, 89, -0.7935586494671086, 0.23822662699999997, 20, 3, 1.9535353535353535), (2, 2, 4, 1, 89, -0.9437941895959154, 0.363593834, 30, 3, 1.9818181818181817), (2, 2, 4, 1, 89, -0.9320142669529339, 0.215319861, 18, 2, 2.01010101010101), (2, 2, 4, 1, 89, -0.7764456775715854, 0.5272622969999999, 44, 3, 2.0383838383838384), (2, 2, 4, 1, 89, -0.9395292112667495, 0.21574004199999985, 18, 2, 2.0666666666666664), (2, 2, 4, 1, 89, -0.7651274247193252, 0.3657205969999999, 30, 2, 2.094949494949495), (2, 2, 4, 1, 89, -0.9222096124222074, 0.22054230499999994, 18, 2, 2.1232323232323234), (2, 2, 4, 1, 89, -0.9425940448289463, 0.3098405620000001, 24, 2, 2.1515151515151514), (2, 2, 4, 1, 89, -0.7499839077475104, 1.1427620470000002, 80, 4, 2.17979797979798), (2, 2, 4, 1, 89, -0.7450426872401992, 0.3635620679999999, 30, 3, 2.2080808080808083), (2, 2, 4, 1, 89, -0.7477480457667782, 0.26875848699999993, 22, 2, 2.2363636363636363), (2, 2, 4, 1, 89, -0.7477032732870625, 0.272723717, 22, 2, 2.264646464646465), (2, 2, 4, 1, 89, -0.9159697837720306, 0.3121221140000001, 26, 2, 2.292929292929293), (2, 2, 4, 1, 89, -0.7271637717357562, 0.3675539870000001, 30, 2, 2.3212121212121213), (2, 2, 4, 1, 89, -0.7252887498181065, 0.2880750460000001, 24, 3, 2.3494949494949497), (2, 2, 4, 1, 89, -0.9219891884895612, 0.21838672399999992, 18, 2, 2.3777777777777778), (2, 2, 4, 1, 89, -0.8376878776955472, 0.240325479, 20, 2, 2.4060606060606062), (2, 2, 4, 1, 89, -0.7442092980241539, 0.2634533269999999, 22, 2, 2.4343434343434343), (2, 2, 4, 1, 89, -0.9361802061027604, 0.12027121399999996, 6, 1, 2.4626262626262627), (2, 2, 4, 1, 89, -0.9360828223347599, 0.072461412, 6, 1, 2.4909090909090907), (2, 2, 4, 1, 89, -0.7011201459225105, 0.89132422, 76, 4, 2.519191919191919), (2, 2, 4, 1, 89, -0.9355450346565523, 0.07254628099999993, 6, 1, 2.5474747474747477), (2, 2, 4, 1, 89, -0.9351281951515272, 0.07261466100000002, 6, 1, 2.5757575757575757), (2, 2, 4, 1, 89, -0.7175823762835954, 0.2623853380000001, 22, 2, 2.604040404040404), (2, 2, 4, 1, 89, -0.6878460117463477, 0.38300542700000006, 32, 3, 2.632323232323232), (2, 2, 4, 1, 89, -0.9306600893965049, 0.2855974459999999, 24, 2, 2.6606060606070607), (2, 2, 4, 1, 89, -0.6837517571991932, 1.3420521490000001, 116, 3, 2.688888888888889), (2, 2, 4, 1, 89, -0.6921901164279091, 0.7096816719999999, 60, 3, 2.717171717171717), (2, 2, 4, 1, 89, -0.6765998397631445, 0.3608739569999999, 30, 3, 2.7454545454545456), (2, 2, 4, 1, 89, -0.6740028459484302, 0.12090281800000002, 10, 2, 2.7737373737373736), (2, 2, 4, 1, 89, -0.889771834769037, 0.21678007100000007, 18, 2, 2.802020202020202), (2, 2, 4, 1, 89, -0.7282985696916174, 0.32681809799999995, 22, 2, 2.83030303030303), (2, 2, 4, 1, 89, -0.7268558104929371, 0.25751367000000003, 22, 2, 2.8585858585858586), (2, 2, 4, 1, 89, -0.6644406101900681, 0.32517935900000006, 24, 2, 2.886868686868687), (2, 2, 4, 1, 89, -0.9057328657383421, 0.31053341599999995, 26, 3, 2.915151515151515), (2, 2, 4, 1, 89, -0.88686666079336, 0.21619350300000018, 18, 2, 2.9434343434343435), (2, 2, 4, 1, 89, -0.6584863672555141, 0.5683552440000001, 48, 3, 2.9717171717171715), (2, 2, 4, 1, 89, -0.6560527174180042, 0.37953019899999996, 32, 3, 3.0)]
+####################################
+Total time: 1.9045233540000002 s
+####################################

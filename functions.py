@@ -1,11 +1,16 @@
+import time as time
+
 import cirq as cirq
 import numpy as numpy
+import pandas as pandas
 import qsimcirq as qsimcirq
 import sympy as sympy
 from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
                          get_fermion_operator, jordan_wigner,
                          uccsd_convert_amplitude_format)
 from openfermionpsi4 import run_psi4
+
+from scipy.optimize import minimize
 
 
 def get_qubit_operators(molecular_data):
@@ -304,121 +309,56 @@ def get_expectation_value(x, *args):
     return expectation_value.real
 
 
-#######################################
-#Asjad mida pole enam vaja: 
-#######################################
-
-def get_measurement_circuits(molecule_qubit_hamiltonian, qubit_count):
-    """Creates list of measurement circuits from molecule hamiltonian for VQE
+def temp(data_list):
+    """Does the main work of calling different functions
+    Takes molecular data and outputs results
 
     Args:
-        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
-        qubit_count (int): Number of qubits
-
-    Returns:
-        list: List of coefficients
-        list: List of circuits
+        molecule_name ([type]): [description]
+        molecular_data ([type]): [description]
+        qubit_operator_list ([type]): [description]
     """
-
-    coefficients = list()
-    circuit_list = list()
-
-    terms = molecule_qubit_hamiltonian.terms
-
-    #Creating circuits
-    for term in terms:
-        coefficients.append(terms[term])
-
-        #Keskväärtus I-st
-        if len(term) == 0:
-            circuit_list.append(None)
-            continue
-        
-        qubits = cirq.LineQubit.range(qubit_count)
-        circuit = cirq.Circuit()
-        
-        moment1 = cirq.Moment()
-        moment2 = cirq.Moment()
-        measure_meoment = cirq.Moment()
-        
-        for basis in term:
-            if basis[1] == 'X':
-                q = qubits[basis[0]]
-                moment1 = moment1.with_operation(cirq.H(q))
-                measure_meoment = measure_meoment.with_operation(cirq.measure(q))
-            
-            elif basis[1] == 'Y':
-                q = qubits[basis[0]]
-                moment1 = moment1.with_operation(cirq.S(q)**(-1))
-                moment2 = moment2.with_operation(cirq.H(q))
-                measure_meoment = measure_meoment.with_operation(cirq.measure(q))
-                
-            elif basis[1] == 'Z':
-                q = qubits[int(basis[0])]
-                measure_meoment = measure_meoment.with_operation(cirq.measure(q))
-        
-        circuit.append(moment1)
-        circuit.append(moment2)
-        circuit.append(measure_meoment)
-
-        circuit_list.append(circuit)
+    length = data_list[0]
+    molecular_data = data_list[1]
+    qubit_operator_list = data_list[2]
+    molecule_name = molecular_data.name
+    electron_count = molecular_data.n_electrons
+    qubit_count = molecular_data.n_qubits
+    orbital_count = molecular_data.n_orbitals
+    qubit_op_count = len(qubit_operator_list)
     
-    return coefficients, circuit_list
+    UCCSD = initial_hartree_fock(electron_count, qubit_count)
+    UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
+    UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
+    uccsd_len = len(UCCSD)
+
+    hamiltonian = get_measurement_hamiltonian(molecular_data)
+    #print(UCCSD.to_text_diagram(transpose=True))
 
 
-def get_measurement_pauli_strings(molecule_qubit_hamiltonian, qubit_count):
-    """Creates PauliStrings from measurement Hamiltonian.
+    ############ Simulation
+    options = {'t': 64}
+    simulator = qsimcirq.QSimSimulator(options)
+    cirq.DropEmptyMoments().optimize_circuit(circuit = UCCSD)
 
-    Args:
-        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
-        qubit_count (int): Number of qubits
+    qubit_map = get_qubit_map(qubit_count)
+    pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
 
-    Returns:
-        [list(int)]: List of coefficents.
-        [list(PauliString)]: List of PauliStrings.
-    """
-    coefficients = list()
-    pauli_string_list = list()
-    qubits = cirq.LineQubit.range(qubit_count)
-    terms = molecule_qubit_hamiltonian.terms
-    
-    #Different parts in Hamiltonian
-    for term in terms:
-        #Empty string
-        pauli_string = None
+    bounds = list()
+    for i in range(len(qubit_operator_list)):
+        bounds.append([-numpy.pi, numpy.pi])
 
-        #No operator
-        if len(term) == 0:
-            pauli_string_list.append(None)
-            coefficients.append(terms[term])
-            continue
-        
-        for basis in term:
-            if basis[1] == 'X':
-                #If pauli_string doesnt contain a gate
-                if pauli_string is None:
-                    pauli_string = cirq.X(qubits[basis[0]])
-                #If it does
-                else:
-                    pauli_string = pauli_string * cirq.X(qubits[basis[0]])
+    start = time.process_time()
 
-            elif basis[1] == 'Y':
-                if pauli_string is None:
-                    pauli_string = cirq.Y(qubits[basis[0]])
-                else:
-                    pauli_string = pauli_string * cirq.Y(qubits[basis[0]])
-                
-            elif basis[1] == 'Z':
-                if pauli_string is None:
-                    pauli_string = cirq.Z(qubits[basis[0]])
-                else:
-                    pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
+    optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
+                        , method = 'TNC', bounds = bounds,
+                        args = (simulator, UCCSD, pauli_sum, qubit_map),
+                        options = {'disp' : True})
 
-        pauli_string_list.append(pauli_string)
-        coefficients.append(terms[term])
+    end_time = time.process_time() - start
 
-    return coefficients, pauli_string_list
+    energy_min = optimize_result.fun
+    nfev = optimize_result.nfev
+    nit = optimize_result.nit
 
-#######################################
-#######################################
-#######################################
+    return electron_count, orbital_count, qubit_count, qubit_op_count,uccsd_len, energy_min, end_time, nfev, nit, length
