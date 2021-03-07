@@ -348,14 +348,14 @@ def temp(data_list):
     for i in range(len(qubit_operator_list)):
         bounds.append([-numpy.pi, numpy.pi])
 
-    start = time.process_time()
+    start = time.time()
 
     optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                         , method = 'TNC', bounds = bounds,
                         args = (simulator, UCCSD, pauli_sum, qubit_map),
                         options = {'disp' : True})
 
-    end_time = time.process_time() - start
+    end_time = time.time() - start
 
     energy_min = optimize_result.fun
     nfev = optimize_result.nfev

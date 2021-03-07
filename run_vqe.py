@@ -66,7 +66,7 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
     data_list = list()
     length_bounds = [0.2, 3]
     #Lineaarne 2 aatomit
-    if molecule_name == 'H2' or 'LiH':
+    if molecule_name == 'H2' or molecule_name == 'LiH':
         #Contains length, molecular data and qubit op for every calculation:
         for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
             while True:
@@ -97,10 +97,10 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                     print("########################################")
                     print("ERROR FIX: length = {}".format(length))
                     print("########################################")
-        
-                    
+                        
     #Lineaarne 3 aatomit
     elif molecule_name == 'BeH2':
+        length_bounds = [0.5, 3.5]
         for length_1 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
             for length_2 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
                 while True:
@@ -109,7 +109,7 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                                 ['H', [ 0, 0, length_1]],
                                 ['H', [ 0, 0, -length_2]]]
                         molecular_data = MolecularData(geometry, basis, multiplicity,
-                            charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+                            charge, filename = './data/{}_{}_{}molecule.data'.format(molecule_name, length_1, length_2))
 
                         molecular_data = run_psi4(molecular_data,
                                                 run_scf=True,
@@ -129,11 +129,11 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                         print("########################################")
                         print("ERROR FIX: lengths = {}, - {}".format(length_1, length_2))
                         print("########################################")
-
-                        
+          
     #Mitte lineaarne 3 aatomit
     elif molecule_name == 'H2O':
-        angle_bounds = [-numpy.pi, numpy.pi] 
+        #angle_bounds = [-numpy.pi + 0.1, numpy.pi - 0.1] 
+        length_bounds = [0.5, 3.5]
         #Length scan
         for length_1 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
             for length_2 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
@@ -143,7 +143,7 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                                     ['H', [numpy.sin(0.9163) / length_1,  numpy.cos(0.9163) / length_1, 0]],
                                     ['H', [- numpy.sin(0.9163) / length_2,  numpy.cos(0.9163) / length_2, 0]]]
                         molecular_data = MolecularData(geometry, basis, multiplicity,
-                            charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+                            charge, filename = './data/{}_{}_{}molecule.data'.format(molecule_name, length_1, length_2))
 
                         molecular_data = run_psi4(molecular_data,
                                                 run_scf=True,
@@ -153,7 +153,7 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                                                 run_fci=True)
 
                         qubit_operator_list = get_qubit_operators(molecular_data)
-                        data_list.append(([(length_1, length_2), molecular_data, qubit_operator_list]))
+                        data_list.append([(length_1, length_2), molecular_data, qubit_operator_list])
                         break
 
                     except Exception as exc:
@@ -163,43 +163,21 @@ def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
                         print("########################################")
                         print("ERROR FIX: lengths = {}, - {}".format(length_1, length_2))
                         print("########################################")
+                    
         
         #Angle scan
+        """
         for angle_1 in numpy.linspace(angle_bounds[0], angle_bounds[1], counts):
             for angle_2 in numpy.linspace(angle_bounds[0], angle_bounds[1], counts):
-                while True:
-                    try:
-                        geometry = [['O', [0, 0, 0]],
-                                    ['H', [numpy.sin(angle_1) / 0.98,  numpy.cos(angle_1) / 0.98, 0]],
-                                    ['H', [- numpy.sin(angle_1) / 0.98,  numpy.cos(angle_2) / 0.98, 0]]]
-                        molecular_data = MolecularData(geometry, basis, multiplicity,
-                            charge, filename = './data/{}_angle_{}_{}molecule.data'.format(molecule_name, angle_1, angle_2))
-
-                        molecular_data = run_psi4(molecular_data,
-                                                run_scf=True,
-                                                run_mp2=True,
-                                                run_cisd=True,
-                                                run_ccsd=True,
-                                                run_fci=True)
-
-                        qubit_operator_list = get_qubit_operators(molecular_data)
-                        data_list.append(([(length_1, length_2), molecular_data, qubit_operator_list]))
-                        break
-
-                    except Exception as exc:
-                        print(exc)
-                        angle_1 += 0.000000000001
-                        angle_2 -= 0.000000000001
-                        print("########################################")
-                        print("ERROR FIX: angles = {}, - {}".format(angle_1, angle_2))
-                        print("########################################")
+                angle_list.append([angle_1, angle_2, basis, multiplicity, charge, molecule_name])
+        """
 
     return data_list
 
 
 
 def scan_scheduler(data_list):
-    pool = mp.Pool(processes = 42)
+    pool = mp.Pool(processes = 20)
     results = pool.map(temp, data_list)
     print(results)
     return results
@@ -211,7 +189,7 @@ def main():
     -min -scan counts molecule \n
     Molecules: H2, LiH, BeH2, H2O
     """
-    start = time.process_time()
+    start = time.time()
     #Program args
     args = sys.argv[1:]
     assert len(args) >= 2
@@ -247,7 +225,7 @@ def main():
     elif scan_mode:
         data_list = get_data(geometry, basis, multiplicity, charge, molecule_name, counts)
         results = scan_scheduler(data_list)
-        end = time.process_time() - start
+        end = time.time() - start
         numpy.savetxt("./results/VQE_scan_{}_{}_{}.csv".format(
             molecule_name, counts, datetime.datetime.now()), results, delimiter=",")
         print("####################################")
