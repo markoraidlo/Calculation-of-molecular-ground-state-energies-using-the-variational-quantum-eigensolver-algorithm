@@ -1,3 +1,4 @@
+import sys
 import time as time
 
 import cirq as cirq
@@ -11,15 +12,131 @@ from scipy.optimize import minimize
 from functions import *
 
 #TODO: See fail ilusaks
+#calc.py molekul / min or skan / count
+
+def main():
+    """
+    -min molecule \n
+    -scan counts molecule \n
+    -min -scan counts molecule \n
+    Molecules: H2, LiH, BeH2, H2O
+    """
+    #Program args
+    args = sys.argv[1:]
+    assert len(args) >= 2
+    min_mode = ('-min' in args)
+    scan_mode = ('-scan' in args)
+    molecule_name = args[-1]
+    if scan_mode:
+        counts = int(args[-2])
+
+    #Main variables
+    geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
+                                [ 'H', [ 0, 0, 0.74]]], 
+                        'LiH': [['Li', [0, 0, 0]] ,
+                                ['H', [0, 0, 1.5949]]],
+                        'BeH2': [['Be', [ 0, 0, 0 ]],
+                                ['H', [ 0, 0, 1.3264]],
+                                ['H', [ 0, 0, -1.3264]]],
+                        'H2O': [['O', [-0.053670056908, -0.039737675589, 0]],
+                                ['H', [-0.028413670411,  0.928922556351, 0]],
+                                ['H', [0.880196420813,  -0.298256807934, 0]]]}
+    geometry = geometry_dict[molecule_name]
+    basis = 'sto-3g'
+    multiplicity = 1
+    charge = 0
+    
+    columns = ['Molecule', 'Scan','Electrons', 'Orbitals', 'Qubits', 'Qubit op', 'Circ len', 
+                'Min energy', 'Time', 'nfev', 'nit']
+    results = pandas.DataFrame(columns = columns)
+    
+    #Finds min value:
+    if min_mode:
+        molecular_data = MolecularData(geometry, basis, multiplicity,
+            charge, filename = './data/{}_min_molecule.data'.format(molecule_name))
+
+        molecular_data = run_psi4(molecular_data,
+                                run_scf=True,
+                                run_mp2=True,
+                                run_cisd=True,
+                                run_ccsd=True,
+                                run_fci=True)
+
+        qubit_operator_list = get_qubit_operators(molecular_data)
+
+        electron_count = molecular_data.n_electrons
+        qubit_count = molecular_data.n_qubits
+        orbital_count = molecular_data.n_orbitals
+        qubit_op_count = len(qubit_operator_list)
+
+        UCCSD = initial_hartree_fock(electron_count, qubit_count)
+        UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
+        UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
+
+        hamiltonian = get_measurement_hamiltonian(molecular_data)
+
+
+        ############ Molecule output
+        print(molecule_name)
+        print("Electron count: {}".format(electron_count))
+        print("Qubit count: {}".format(qubit_count))
+        print("Orbital count: {}".format(orbital_count))
+        print("Qubit operator count: {}".format(qubit_op_count))
+        print("Length of UCCSD circuit: {}".format(len(UCCSD)))
+        #print(UCCSD.to_text_diagram(transpose=True))
+
+
+        ############ Simulation
+        options = {'t': 64}
+        simulator = qsimcirq.QSimSimulator(options)
+        cirq.DropEmptyMoments().optimize_circuit(circuit = UCCSD)
+
+        qubit_map = get_qubit_map(qubit_count)
+        pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
+
+        bounds = list()
+        for i in range(len(qubit_operator_list)):
+            bounds.append([-numpy.pi, numpy.pi])
+
+        start = time.process_time()
+
+        optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
+                            , method = 'TNC', bounds = bounds,
+                            args = (simulator, UCCSD, pauli_sum, qubit_map),
+                            options = {'disp' : True})
+
+        end_time = time.process_time() - start
+
+
+        energy_min = optimize_result.fun
+        nfev = optimize_result.nfev
+        nit = optimize_result.nit
+        print("Minimum energy: {}".format(energy_min))
+        print("Time elapsed: {} s".format(end_time))
+        print("Number of evaluations of the objective function: {}".format(nfev))
+        print("Number of iterations performed by the optimizer: {}".format(nit))
+        print("#####################################################################")
+
+        ############ Data save
+        results.loc[len(results)] = [molecule_name, " ",electron_count, orbital_count, qubit_count, qubit_op_count, 
+                        len(UCCSD), energy_min, end_time, nfev, nit]
+        results.to_csv("VQE_min_{}.csv".format(molecule_name))
+
+    #Scans for different bond lengths
+    if scan_mode:
+        #H2, LiH scan
+        #BeH2 scan
+        #H2O scan 2
+        pass
+        
+
+if __name__ == "__main__":
+    main()
+
+
 
 #For all:
-basis = 'sto-3g'
-multiplicity = 1
-charge = 0
 
-columns = ['Molecule', 'Electrons', 'Orbitals', 'Qubits', 'Qubit op', 'Circ len', 
-            'Min energy', 'Time', 'nfev', 'nit']
-results = pandas.DataFrame(columns = columns)
 
 ########################################################################
 ###         H2 min
@@ -346,7 +463,7 @@ results.loc[len(results)] = [molecule_name, electron_count, orbital_count, qubit
 results.to_csv("VQE_results.csv")
 
 """
-
+"""
 ########################################################################
 ###         H2 scan
 ########################################################################
@@ -354,31 +471,33 @@ results.to_csv("VQE_results.csv")
 result_length = list()
 result_energy = list()
 molecule_name = "H2"
-for length in numpy.linspace(0.2, 3, 50):
+for length in numpy.linspace(0.2, 3, 60):
 
-    geometry = [[ 'H', [ 0, 0, 0]],
-                [ 'H', [ 0, 0, length]]]
-
-    molecular_data = MolecularData(geometry, basis, multiplicity,
-        charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
-
-    molecular_data = run_psi4(molecular_data,
-                            run_scf=True,
-                            run_mp2=True,
-                            run_cisd=True,
-                            run_ccsd=True,
-                            run_fci=True)
-
-    #UnboundLocalError: local variable 'single_amplitudes_list' referenced before assignment
     while True:
+        geometry = [[ 'H', [ 0, 0, 0]],
+                    [ 'H', [ 0, 0, length]]]
+
+        print(length)
+        
         try:
+            molecular_data = MolecularData(geometry, basis, multiplicity,
+                charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+
+            molecular_data = run_psi4(molecular_data,
+                                    run_scf=True,
+                                    run_mp2=True,
+                                    run_cisd=True,
+                                    run_ccsd=True,
+                                    run_fci=True)
+
             qubit_operator_list = get_qubit_operators(molecular_data)
             break
-        except UnboundLocalError as error:
-            print(error)
-            pass
         except Exception as exc:
             print(exc)
+            length += 0.000000000001
+            print("########################################")
+            print("ERROR FIX: length = {}".format(length))
+            print("########################################")
             pass
 
     electron_count = molecular_data.n_electrons
@@ -566,3 +685,5 @@ print("BeH2 Scan complete.")
 print("###########################################")       
 BeH2_scan = BeH2_scan.real
 numpy.savetxt('BeH2_scan.csv', BeH2_scan, delimiter=',')
+
+"""

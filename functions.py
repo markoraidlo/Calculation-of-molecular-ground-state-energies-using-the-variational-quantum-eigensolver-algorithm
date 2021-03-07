@@ -24,7 +24,7 @@ def get_qubit_operators(molecular_data):
 
     # Convert amplitudes into lists
     if (isinstance(single_amplitudes, numpy.ndarray) or isinstance(double_amplitudes, numpy.ndarray)):
-        single_amplitudes_list, double_amplitudes_list = uccsd_convert_amplitude_format( single_amplitudes, double_amplitudes)
+        single_amplitudes_list, double_amplitudes_list = uccsd_convert_amplitude_format( single_amplitudes, double_amplitudes) 
     
     fermion_operator_list = list()
     #Single excitations
