@@ -1,4 +1,5 @@
 import sys
+import logging
 import time as time
 import datetime as datetime
 import multiprocessing as mp
@@ -14,17 +15,29 @@ from scipy.optimize import minimize
 from functions import *
 
 
-def calculate_minimum(geometry, basis, multiplicity, charge, molecule_name, results):
+def calculate_minimum(molecule_name, basis, multiplicity, charge):
     """[summary]
 
     Args:
-        geometry ([type]): [description]
+        molecule_name ([type]): [description]
         basis ([type]): [description]
         multiplicity ([type]): [description]
         charge ([type]): [description]
-        molecule_name ([type]): [description]
-        results ([type]): [description]
     """
+    logging.info("Calculating %s minimum.", molecule_name)
+
+    min_geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
+                            [ 'H', [ 0, 0, 0.74]]], 
+                    'LiH': [['Li', [0, 0, 0]] ,
+                            ['H', [0, 0, 1.5949]]],
+                    'BeH2': [['Be', [ 0, 0, 0 ]],
+                            ['H', [ 0, 0, 1.3264]],
+                            ['H', [ 0, 0, -1.3264]]],
+                    'H2O': [['O', [-0.053670056908, -0.039737675589, 0]],
+                            ['H', [-0.028413670411,  0.928922556351, 0]],
+                            ['H', [0.880196420813,  -0.298256807934, 0]]]}
+    geometry = min_geometry_dict[molecule_name]
+
     #Should always work for known geometry
     molecular_data = MolecularData(geometry, basis, multiplicity,
         charge, filename = './data/{}_min_molecule.data'.format(molecule_name))
@@ -36,12 +49,28 @@ def calculate_minimum(geometry, basis, multiplicity, charge, molecule_name, resu
                             run_ccsd=True,
                             run_fci=True)
 
-    qubit_operator_list = get_qubit_operators(molecular_data)
+    # Do the calculations.
+    min_result = single_point_calculation(molecular_data)
 
-    #Do the calculations
-    electron_count, orbital_count, qubit_count, qubit_op_count,uccsd_len, energy_min, end_time, nfev, nit = temp([-1, molecular_data, qubit_operator_list])
+    # Result save.
+    file = open("./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now()), "a")
+    file.write("{}, {}, {}, {}, \n".format(min_result[0], min_result[1]
+                                         , min_result[2], min_result[3]))
+    file.close()
+    logging.info("Results saved.")
 
-    ############ Molecule output
+        #TODO: Make into log
+    """
+    molecule_name = molecular_data.name
+    electron_count = molecular_data.n_electrons
+    qubit_count = molecular_data.n_qubits
+    orbital_count = molecular_data.n_orbitals
+    qubit_op_count = len(qubit_operator_list)
+
+    UCCSD = initial_hartree_fock(electron_count, qubit_count)
+    UNITARY = create_uccsd(qubit_operator_list, qubit_count, 't')
+    UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
+    uccsd_len = len(UCCSD)
     print("#####################################################################")
     print(molecule_name)
     print("Electron count: {}".format(electron_count))
@@ -55,138 +84,63 @@ def calculate_minimum(geometry, basis, multiplicity, charge, molecule_name, resu
     print("Number of evaluations of the objective function: {}".format(nfev))
     print("Number of iterations performed by the optimizer: {}".format(nit))
     print("#####################################################################")
+    """
+    
 
-    ############ Data save
-    results.loc[len(results)] = [molecule_name, " ",electron_count, orbital_count, qubit_count, qubit_op_count, 
-                    uccsd_len, energy_min, end_time, nfev, nit]
-    results.to_csv("./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now()))
+def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
+    length_bounds = [0.5, 3]
+    logging.info("Calculating %s scan.", molecule_name)
+    file_name = "./results/VQE_scan_{}_{}.csv".format(molecule_name, datetime.datetime.now())
+    
+    for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
+        while True:
+            geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
+                                [ 'H', [ 0, 0, length]]], 
+                        'LiH': [['Li', [0, 0, 0]] ,
+                                ['H', [0, 0,  length]]],
+                        'BeH2': [['Be', [ 0, 0, 0 ]],
+                                ['H', [ 0, 0,  length]],
+                                ['H', [ 0, 0, - length]]],
+                        'H2O': [['O', [0, 0, 0]],
+                                ['H', [numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]],
+                                ['H', [- numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]]]}
 
+            geometry = geometry_dict[molecule_name]
 
-def get_data(geometry, basis, multiplicity, charge, molecule_name, counts):
-    data_list = list()
-    length_bounds = [0.2, 3]
-    #Lineaarne 2 aatomit
-    if molecule_name == 'H2' or molecule_name == 'LiH':
-        #Contains length, molecular data and qubit op for every calculation:
-        for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
-            while True:
-                if molecule_name == 'H2':
-                    geometry = [[ 'H', [ 0, 0, 0]],
-                                [ 'H', [ 0, 0, length]]]
-                else:
-                    geometry = [['Li', [0, 0, 0]] ,
-                                ['H', [0, 0, length]]]
+            try:
+                logging.info("Trying psi4 calculation at length %s.", length)
+                molecular_data = MolecularData(geometry, basis, multiplicity,
+                    charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
 
-                try:
-                    molecular_data = MolecularData(geometry, basis, multiplicity,
-                        charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+                molecular_data = run_psi4(molecular_data,
+                                        run_scf=True,
+                                        run_mp2=True,
+                                        run_cisd=True,
+                                        run_ccsd=True,
+                                        run_fci=True)
+                
+                logging.info("Psi4 calculations were succesful.")
+                # Do the calculations.
+                scan_result = single_point_calculation(molecular_data)
 
-                    molecular_data = run_psi4(molecular_data,
-                                            run_scf=True,
-                                            run_mp2=True,
-                                            run_cisd=True,
-                                            run_ccsd=True,
-                                            run_fci=True)
+                # Result save.
+                file = open(file_name, "a")
+                file.write("{}, {}, {}, {}, {}, \n".format(scan_result[0], scan_result[1], 
+                                                       scan_result[2], scan_result[3], 
+                                                       length))
+                file.close()
+                logging.info("Result at %s saved.", length)
 
-                    qubit_operator_list = get_qubit_operators(molecular_data)
-                    data_list.append([length, molecular_data, qubit_operator_list])
-                    break
-                except Exception as exc:
-                    print(exc)
-                    length += 0.000000000001
-                    print("########################################")
-                    print("ERROR FIX: length = {}".format(length))
-                    print("########################################")
+                break
+            except Exception as exc:
+                logging.error(exc)
+                length += 0.000000000001
+                logging.info("New length set: %s", length)
                         
-    #Lineaarne 3 aatomit
-    elif molecule_name == 'BeH2':
-        length_bounds = [0.5, 3.5]
-        for length_1 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
-            for length_2 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
-                while True:
-                    try:
-                        geometry = [['Be', [ 0, 0, 0 ]],
-                                ['H', [ 0, 0, length_1]],
-                                ['H', [ 0, 0, -length_2]]]
-                        molecular_data = MolecularData(geometry, basis, multiplicity,
-                            charge, filename = './data/{}_{}_{}molecule.data'.format(molecule_name, length_1, length_2))
-
-                        molecular_data = run_psi4(molecular_data,
-                                                run_scf=True,
-                                                run_mp2=True,
-                                                run_cisd=True,
-                                                run_ccsd=True,
-                                                run_fci=True)
-
-                        qubit_operator_list = get_qubit_operators(molecular_data)
-                        data_list.append([[length_1, -length_2], molecular_data, qubit_operator_list])
-                        break
-
-                    except Exception as exc:
-                        print(exc)
-                        length_1 += 0.000000000001
-                        length_2 -= 0.000000000001
-                        print("########################################")
-                        print("ERROR FIX: lengths = {}, - {}".format(length_1, length_2))
-                        print("########################################")
-          
-    #Mitte lineaarne 3 aatomit
-    elif molecule_name == 'H2O':
-        #angle_bounds = [-numpy.pi + 0.1, numpy.pi - 0.1] 
-        length_bounds = [0.5, 3.5]
-        #Length scan
-        for length_1 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
-            for length_2 in numpy.linspace(length_bounds[0], length_bounds[1], counts):
-                while True:
-                    try:
-                        geometry = [['O', [0, 0, 0]],
-                                    ['H', [numpy.sin(0.9163) / length_1,  numpy.cos(0.9163) / length_1, 0]],
-                                    ['H', [- numpy.sin(0.9163) / length_2,  numpy.cos(0.9163) / length_2, 0]]]
-                        molecular_data = MolecularData(geometry, basis, multiplicity,
-                            charge, filename = './data/{}_{}_{}molecule.data'.format(molecule_name, length_1, length_2))
-
-                        molecular_data = run_psi4(molecular_data,
-                                                run_scf=True,
-                                                run_mp2=True,
-                                                run_cisd=True,
-                                                run_ccsd=True,
-                                                run_fci=True)
-
-                        qubit_operator_list = get_qubit_operators(molecular_data)
-                        data_list.append([(length_1, length_2), molecular_data, qubit_operator_list])
-                        break
-
-                    except Exception as exc:
-                        print(exc)
-                        length_1 += 0.000000000001
-                        length_2 -= 0.000000000001
-                        print("########################################")
-                        print("ERROR FIX: lengths = {}, - {}".format(length_1, length_2))
-                        print("########################################")
-                    
-        
-        #Angle scan
-        """
-        for angle_1 in numpy.linspace(angle_bounds[0], angle_bounds[1], counts):
-            for angle_2 in numpy.linspace(angle_bounds[0], angle_bounds[1], counts):
-                angle_list.append([angle_1, angle_2, basis, multiplicity, charge, molecule_name])
-        """
-
-    return data_list
-
-
-
-def scan_scheduler(data_list):
-    pool = mp.Pool(processes = 20)
-    results = pool.map(temp, data_list)
-    print(results)
-    return results
-
 def main():
     """
     -min molecule \n
     -scan counts molecule \n
-    -min -scan counts molecule \n
     Molecules: H2, LiH, BeH2, H2O
     """
     start = time.time()
@@ -199,42 +153,32 @@ def main():
     if scan_mode:
         counts = int(args[-2])
 
+    #Logging
+    logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("./logs/LOG_{}_{}.log".format(molecule_name, datetime.datetime.now())),
+        logging.StreamHandler()
+    ])
+
     #Main variables
-    geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
-                                [ 'H', [ 0, 0, 0.74]]], 
-                        'LiH': [['Li', [0, 0, 0]] ,
-                                ['H', [0, 0, 1.5949]]],
-                        'BeH2': [['Be', [ 0, 0, 0 ]],
-                                ['H', [ 0, 0, 1.3264]],
-                                ['H', [ 0, 0, -1.3264]]],
-                        'H2O': [['O', [-0.053670056908, -0.039737675589, 0]],
-                                ['H', [-0.028413670411,  0.928922556351, 0]],
-                                ['H', [0.880196420813,  -0.298256807934, 0]]]}
-    geometry = geometry_dict[molecule_name]
     basis = 'sto-3g'
     multiplicity = 1
     charge = 0
     
-    columns = ['Molecule', 'Scan','Electrons', 'Orbitals', 'Qubits', 'Qubit op', 'Circ len', 
-                'Min energy', 'Time', 'nfev', 'nit']
-    results = pandas.DataFrame(columns = columns)
-    
-    #Finds min value:
+    # Calculation modes:
     if min_mode:
-        calculate_minimum(geometry, basis, multiplicity, charge, molecule_name, results)
+        calculate_minimum(molecule_name, basis, multiplicity, charge)
     elif scan_mode:
-        data_list = get_data(geometry, basis, multiplicity, charge, molecule_name, counts)
-        results = scan_scheduler(data_list)
-        end = time.time() - start
-        numpy.savetxt("./results/VQE_scan_{}_{}_{}.csv".format(
-            molecule_name, counts, datetime.datetime.now()), results, delimiter=",")
-        print("####################################")
-        print("Total time: {} s".format(end))
-        print("####################################")
+        calculate_scan(molecule_name, basis, multiplicity, charge, counts)
     else:
         print("No mode selected!")
         exit()
     
+    elapsed_time = time.time() - start
+    logging.info("Total programm run time: %s s.", elapsed_time)
+    #Log elapsed time
 
 if __name__ == "__main__":
     main()

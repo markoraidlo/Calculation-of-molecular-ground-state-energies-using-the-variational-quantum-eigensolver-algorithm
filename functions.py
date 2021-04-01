@@ -11,10 +11,12 @@ from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
 from openfermionpsi4 import run_psi4
 
 from scipy.optimize import minimize
+import logging
 
 
 def get_qubit_operators(molecular_data):
     """Finds qubit operators for quantum circuit unitary.
+    Molecular Data -> List of qubit operators
 
     Args:
         molecular_data (MolecularData): MolecularData with psi4 calculation
@@ -43,32 +45,18 @@ def get_qubit_operators(molecular_data):
         i, j, k, l = int(i), int(j), int(k), int(l)
         ferm_op = (FermionOperator(((i, 1), (j, 0), (k, 1), (l, 0)), 1.) - FermionOperator(((l, 1), (k, 0), (j, 1), (i, 0)), 1.))
         fermion_operator_list.append(ferm_op)
-        
+
     #Jordan-Wigner transform
     qubit_operator_list = list()
     for fermion_operator in fermion_operator_list:
         qubit_operator_list.append(jordan_wigner(fermion_operator))
-
-    #Optimization
-    new_list = list()
-    for op in qubit_operator_list:
-        if len(new_list) == 0:
-            new_list.append(op)
-            
-        for checked in new_list:
-            if checked == op:
-                break
-            else:
-                if new_list.index(checked) == len(new_list) - 1:
-                    new_list.append(op)
-
-    qubit_operator_list = new_list
-    
+ 
     return qubit_operator_list
 
 
-def create_UCCSD(qubit_operator_list, qubit_count, param):
+def create_uccsd(qubit_operator_list, qubit_count, param):
     """Converts list of qubit operators into a UCCSD circuit
+    List of qubit operators -> cirq UCCSD circuit 
 
     Args:
         qubit_operator_list (list[QubitOperator]): List of qubit operators
@@ -160,10 +148,11 @@ def create_UCCSD(qubit_operator_list, qubit_count, param):
 
 def initial_hartree_fock(electron_count, qubit_count):
     """Creates circuit for initial Hartree-Fock state.
+    |11..100...0>
 
     Args:
         electron_count (int): Number of electrons in molecule
-        qubit_count (int): Number of qubits for circuit
+        qubit_count (int): Number of qubits in circuit
 
     Returns:
         Circuit: Start of the UCCSD circuit
@@ -259,7 +248,7 @@ def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
 
 def get_qubit_map(qubit_count):
     """Creates qubit map for expectation_from_state_vector() function.
-    Sets qubit[j] with integer j.
+    Maps qubit[j] to integer j.
 
     Args:
         qubit_count (int): Number of qubtis needed to map
@@ -280,6 +269,7 @@ def get_qubit_map(qubit_count):
 
 def get_expectation_value(x, *args):
     """For use with scipy minimize. 
+    Calculates expectation value for given parameters.
 
     Args:
         x (list): List of parameters for circuit
@@ -288,8 +278,10 @@ def get_expectation_value(x, *args):
     Returns:
         float: Expectation value.
     """
+    start_time = time.time()
+
     assert len(args) == 4
-    simulator, UCCSD, pauli_sum, qubit_map = args
+    simulator, uccsd, pauli_sum, qubit_map = args
 
     resolver_dict = dict()
     for k in range(len(x)):
@@ -298,7 +290,7 @@ def get_expectation_value(x, *args):
     resolver = cirq.ParamResolver(resolver_dict)
 
     #Main simulation call
-    result = simulator.simulate(UCCSD, resolver)
+    result = simulator.simulate(uccsd, resolver)
     state_vector = result.final_state_vector
 
     norm = numpy.linalg.norm(state_vector)
@@ -306,40 +298,36 @@ def get_expectation_value(x, *args):
 
     expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
 
+    elapsed_time = time.time() - start_time
+    logging.info("get_expectation_value time: %s", elapsed_time)
+
     return expectation_value.real
 
 
-def temp(data_list):
+# See ka ära muuta sest pole vaja enam paraliseerida
+def single_point_calculation(molecular_data):
     """Does the main work of calling different functions
     Takes molecular data and outputs results
 
     Args:
-        molecule_name ([type]): [description]
         molecular_data ([type]): [description]
-        qubit_operator_list ([type]): [description]
     """
-    length = data_list[0]
-    molecular_data = data_list[1]
-    qubit_operator_list = data_list[2]
-    molecule_name = molecular_data.name
+    logging.info("Starting expectation value calculations.")
+    
     electron_count = molecular_data.n_electrons
     qubit_count = molecular_data.n_qubits
-    orbital_count = molecular_data.n_orbitals
-    qubit_op_count = len(qubit_operator_list)
     
-    UCCSD = initial_hartree_fock(electron_count, qubit_count)
-    UNITARY = create_UCCSD(qubit_operator_list, qubit_count, 't')
-    UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
-    uccsd_len = len(UCCSD)
+    qubit_operator_list = get_qubit_operators(molecular_data)
+    uccsd = initial_hartree_fock(electron_count, qubit_count)
+    unitary = create_uccsd(qubit_operator_list, qubit_count, 't')
+    uccsd.append(unitary, strategy = cirq.InsertStrategy.NEW)
 
     hamiltonian = get_measurement_hamiltonian(molecular_data)
-    #print(UCCSD.to_text_diagram(transpose=True))
-
 
     ############ Simulation
     options = {'t': 64}
     simulator = qsimcirq.QSimSimulator(options)
-    cirq.DropEmptyMoments().optimize_circuit(circuit = UCCSD)
+    cirq.DropEmptyMoments().optimize_circuit(circuit = uccsd)
 
     qubit_map = get_qubit_map(qubit_count)
     pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
@@ -348,17 +336,20 @@ def temp(data_list):
     for i in range(len(qubit_operator_list)):
         bounds.append([-numpy.pi, numpy.pi])
 
-    start = time.time()
+    start_time = time.time()
 
     optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                         , method = 'TNC', bounds = bounds,
-                        args = (simulator, UCCSD, pauli_sum, qubit_map),
-                        options = {'disp' : True})
+                        args = (simulator, uccsd, pauli_sum, qubit_map),
+                        options = {'disp' : True, 'ftol': 1e-4})
 
-    end_time = time.time() - start
+    elapsed_time = time.time() - start_time
+
+    logging.info(optimize_result)
+    logging.info("Elapsed time: %s", elapsed_time)
 
     energy_min = optimize_result.fun
     nfev = optimize_result.nfev
     nit = optimize_result.nit
 
-    return electron_count, orbital_count, qubit_count, qubit_op_count,uccsd_len, energy_min, end_time, nfev, nit, length
+    return energy_min, nfev, nit, elapsed_time
