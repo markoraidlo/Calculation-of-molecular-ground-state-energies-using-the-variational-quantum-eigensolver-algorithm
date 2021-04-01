@@ -1,0 +1,22 @@
+2021-04-01 20:50:00,122 [INFO] Calculating H2 minimum.
+2021-04-01 20:50:02,274 [INFO] Starting expectation value calculations.
+2021-04-01 20:50:02,319 [INFO] get_expectation_value: time - 0.012734174728393555 s; value - -1.11675930029
+2021-04-01 20:50:02,332 [INFO] get_expectation_value: time - 0.012876272201538086 s; value - -1.1167592873483074
+2021-04-01 20:50:02,346 [INFO] get_expectation_value: time - 0.013709306716918945 s; value - -1.1167595842157425
+2021-04-01 20:50:02,360 [INFO] get_expectation_value: time - 0.013150691986083984 s; value - -1.1167595837627209
+2021-04-01 20:50:02,371 [INFO] get_expectation_value: time - 0.011244773864746094 s; value - -1.116759585466856
+2021-04-01 20:50:02,382 [INFO] get_expectation_value: time - 0.011198759078979492 s; value - -1.1167595850138348
+2021-04-01 20:50:02,382 [INFO]      fun: -1.116759585466856
+     jac: array([0.04530212])
+ message: 'Converged (|f_n-f_(n-1)| ~= 0)'
+    nfev: 6
+     nit: 1
+  status: 1
+ success: True
+       x: array([-7.88943288e-07])
+2021-04-01 20:50:02,383 [INFO] Elapsed time: 0.07603788375854492
+2021-04-01 20:50:02,383 [INFO] Electron count: 2
+2021-04-01 20:50:02,383 [INFO] Qubit count: 4
+2021-04-01 20:50:02,383 [INFO] Orbital count: 2
+2021-04-01 20:50:02,383 [INFO] Results saved.
+2021-04-01 20:50:02,383 [INFO] Total programm run time: 2.2610018253326416 s.

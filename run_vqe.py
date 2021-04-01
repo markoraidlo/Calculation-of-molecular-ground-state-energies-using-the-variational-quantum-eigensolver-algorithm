@@ -1,8 +1,8 @@
-import sys
-import logging
-import time as time
 import datetime as datetime
+import logging
 import multiprocessing as mp
+import sys
+import time as time
 
 import cirq as cirq
 import numpy as numpy
@@ -16,13 +16,13 @@ from functions import *
 
 
 def calculate_minimum(molecule_name, basis, multiplicity, charge):
-    """[summary]
+    """Calculates minimum of selected molecule and saves results.
 
     Args:
-        molecule_name ([type]): [description]
-        basis ([type]): [description]
-        multiplicity ([type]): [description]
-        charge ([type]): [description]
+        molecule_name (String): Chemical formula of molecule. 
+        basis (int): Basis for psi4 calculations.
+        multiplicity (int): Molecule multiplicity.
+        charge (int): Charge of molecule.
     """
     logging.info("Calculating %s minimum.", molecule_name)
 
@@ -52,43 +52,30 @@ def calculate_minimum(molecule_name, basis, multiplicity, charge):
     # Do the calculations.
     min_result = single_point_calculation(molecular_data)
 
+    #Molecule info log
+    logging.info("Electron count: %s", molecular_data.n_electrons)
+    logging.info("Qubit count: %s", molecular_data.n_qubits)
+    logging.info("Orbital count: %s", molecular_data.n_orbitals)
+
     # Result save.
     file = open("./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now()), "a")
     file.write("{}, {}, {}, {}, \n".format(min_result[0], min_result[1]
                                          , min_result[2], min_result[3]))
     file.close()
     logging.info("Results saved.")
-
-        #TODO: Make into log
-    """
-    molecule_name = molecular_data.name
-    electron_count = molecular_data.n_electrons
-    qubit_count = molecular_data.n_qubits
-    orbital_count = molecular_data.n_orbitals
-    qubit_op_count = len(qubit_operator_list)
-
-    UCCSD = initial_hartree_fock(electron_count, qubit_count)
-    UNITARY = create_uccsd(qubit_operator_list, qubit_count, 't')
-    UCCSD.append(UNITARY, strategy = cirq.InsertStrategy.NEW)
-    uccsd_len = len(UCCSD)
-    print("#####################################################################")
-    print(molecule_name)
-    print("Electron count: {}".format(electron_count))
-    print("Qubit count: {}".format(qubit_count))
-    print("Orbital count: {}".format(orbital_count))
-    print("Qubit operator count: {}".format(qubit_op_count))
-    print("Length of UCCSD circuit: {}".format(uccsd_len))
-    print("#####################################################################")
-    print("Minimum energy: {}".format(energy_min))
-    print("Time elapsed: {} s".format(end_time))
-    print("Number of evaluations of the objective function: {}".format(nfev))
-    print("Number of iterations performed by the optimizer: {}".format(nit))
-    print("#####################################################################")
-    """
     
 
 def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
-    length_bounds = [0.5, 3]
+    """Calculates given number of minimum values in a range.
+
+    Args:
+        molecule_name (String): Chemical formula of molecule. 
+        basis (int): Basis for psi4 calculations.
+        multiplicity (int): Molecule multiplicity.
+        charge (int): Charge of molecule.
+        counts (int): Number of scan points to be calculated.
+    """
+    length_bounds = [0.1, 5]
     logging.info("Calculating %s scan.", molecule_name)
     file_name = "./results/VQE_scan_{}_{}.csv".format(molecule_name, datetime.datetime.now())
     
@@ -137,6 +124,7 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                 length += 0.000000000001
                 logging.info("New length set: %s", length)
                         
+
 def main():
     """
     -min molecule \n
@@ -178,7 +166,8 @@ def main():
     
     elapsed_time = time.time() - start
     logging.info("Total programm run time: %s s.", elapsed_time)
-    #Log elapsed time
+    exit()
+
 
 if __name__ == "__main__":
     main()

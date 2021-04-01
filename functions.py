@@ -1,17 +1,15 @@
+import logging
 import time as time
 
 import cirq as cirq
 import numpy as numpy
-import pandas as pandas
 import qsimcirq as qsimcirq
-import sympy as sympy
 from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
                          get_fermion_operator, jordan_wigner,
                          uccsd_convert_amplitude_format)
 from openfermionpsi4 import run_psi4
-
 from scipy.optimize import minimize
-import logging
+from sympy import Symbol
 
 
 def get_qubit_operators(molecular_data):
@@ -50,6 +48,20 @@ def get_qubit_operators(molecular_data):
     qubit_operator_list = list()
     for fermion_operator in fermion_operator_list:
         qubit_operator_list.append(jordan_wigner(fermion_operator))
+
+    new_list = list()
+    for op in qubit_operator_list:
+        if len(new_list) == 0:
+            new_list.append(op)
+            
+        for checked in new_list:
+            if checked == op:
+                break
+            else:
+                if new_list.index(checked) == len(new_list) - 1:
+                    new_list.append(op)
+
+    qubit_operator_list = new_list
  
     return qubit_operator_list
 
@@ -79,7 +91,7 @@ def create_uccsd(qubit_operator_list, qubit_count, param):
 
         #Tundmatu parameeter
         param_string = param + "{}".format(i)
-        temp_param = sympy.Symbol(param_string)
+        temp_param = Symbol(param_string)
 
         #Different exponents
         for term in terms_list:
@@ -299,7 +311,7 @@ def get_expectation_value(x, *args):
     expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
 
     elapsed_time = time.time() - start_time
-    logging.info("get_expectation_value time: %s", elapsed_time)
+    logging.info("get_expectation_value: time - %s s; value - %s", elapsed_time, expectation_value.real)
 
     return expectation_value.real
 
