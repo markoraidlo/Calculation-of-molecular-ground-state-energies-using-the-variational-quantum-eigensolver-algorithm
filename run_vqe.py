@@ -80,6 +80,7 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
     file_name = "./results/VQE_scan_{}_{}.csv".format(molecule_name, datetime.datetime.now())
     
     for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
+        length = round(length, 3)
         while True:
             geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
                                 [ 'H', [ 0, 0, length]]], 
@@ -95,6 +96,7 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
             geometry = geometry_dict[molecule_name]
 
             try:
+                #TODO: Catch psi4 errors
                 logging.info("Trying psi4 calculation at length %s.", length)
                 molecular_data = MolecularData(geometry, basis, multiplicity,
                     charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
@@ -121,7 +123,7 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                 break
             except Exception as exc:
                 logging.error(exc)
-                length += 0.000000000001
+                length += 0.001
                 logging.info("New length set: %s", length)
                         
 

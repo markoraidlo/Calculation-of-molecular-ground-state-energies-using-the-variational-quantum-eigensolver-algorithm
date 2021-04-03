@@ -311,7 +311,7 @@ def get_expectation_value(x, *args):
     expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
 
     elapsed_time = time.time() - start_time
-    logging.info("get_expectation_value: time - %s s; value - %s", elapsed_time, expectation_value.real)
+    #logging.info("get_expectation_value: time - %s s; value - %s", elapsed_time, expectation_value.real)
 
     return expectation_value.real
 
