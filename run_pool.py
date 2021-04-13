@@ -15,70 +15,14 @@ from scipy.optimize import minimize
 from vqe_functions import *
 
 
-def calculate_minimum(molecule_name, basis, multiplicity, charge):
-    """Calculates minimum of selected molecule and saves results.
-
-    Args:
-        molecule_name (String): Chemical formula of molecule. 
-        basis (int): Basis for psi4 calculations.
-        multiplicity (int): Molecule multiplicity.
-        charge (int): Charge of molecule.
-    """
-    logging.info("Calculating %s minimum.", molecule_name)
-
-    min_geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
-                            [ 'H', [ 0, 0, 0.74]]], 
-                    'LiH': [['Li', [0, 0, 0]] ,
-                            ['H', [0, 0, 1.5949]]],
-                    'BeH2': [['Be', [ 0, 0, 0 ]],
-                            ['H', [ 0, 0, 1.3264]],
-                            ['H', [ 0, 0, -1.3264]]],
-                    'H2O': [['O', [-0.053670056908, -0.039737675589, 0]],
-                            ['H', [-0.028413670411,  0.928922556351, 0]],
-                            ['H', [0.880196420813,  -0.298256807934, 0]]]}
-    geometry = min_geometry_dict[molecule_name]
-
-    #Should always work for known geometry
-    molecular_data = MolecularData(geometry, basis, multiplicity,
-        charge, filename = './data/{}_min_molecule.data'.format(molecule_name))
-
-    molecular_data = run_psi4(molecular_data,
-                            run_scf=True,
-                            run_mp2=True,
-                            run_cisd=True,
-                            run_ccsd=True,
-                            run_fci=True)
-
-    # Do the calculations.
-    min_result = single_point_calculation(molecular_data)
-
-    #Molecule info log
-    logging.info("Electron count: %s", molecular_data.n_electrons)
-    logging.info("Qubit count: %s", molecular_data.n_qubits)
-    logging.info("Orbital count: %s", molecular_data.n_orbitals)
-
-    # Result save.
-    file = open("./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now()), "a")
-    file.write("{}, {}, {}, {}, \n".format(min_result[0], min_result[1]
-                                         , min_result[2], min_result[3]))
-    file.close()
-    logging.info("Results saved.")
-    
-
 def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
-    """Calculates given number of minimum values in a range.
 
-    Args:
-        molecule_name (String): Chemical formula of molecule. 
-        basis (int): Basis for psi4 calculations.
-        multiplicity (int): Molecule multiplicity.
-        charge (int): Charge of molecule.
-        counts (int): Number of scan points to be calculated.
-    """
     length_bounds = [0.2, 3]
     logging.info("Calculating %s scan.", molecule_name)
     file_name = "./results/VQE_scan_{}_{}.csv".format(molecule_name, datetime.datetime.now())
     
+    molecular_data_list = list()
+
     for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
         length = round(length, 3)
         while True:
@@ -96,10 +40,9 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
             geometry = geometry_dict[molecule_name]
 
             try:
-                #TODO: Catch psi4 errors
                 logging.info("Trying psi4 calculation at length %s.", length)
                 molecular_data = MolecularData(geometry, basis, multiplicity,
-                    charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+                    charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length), description=str(length))
 
                 molecular_data = run_psi4(molecular_data,
                                         run_scf=True,
@@ -110,28 +53,81 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                 
                 logging.info("Psi4 calculations were succesful.")
                 # Do the calculations.
-                scan_result = single_point_calculation(molecular_data)
-
-                # Result save.
-                file = open(file_name, "a")
-                file.write("{}, {}, {}, {}, {}, \n".format(scan_result[0], scan_result[1], 
-                                                       scan_result[2], scan_result[3], 
-                                                       length))
-                file.close()
-                logging.info("Result at %s saved.", length)
-
+                molecular_data_list.append([molecular_data, file_name])
                 break
             except Exception as exc:
                 logging.error(exc)
                 length += 0.001
                 logging.info("New length set: %s", length)
+
+    #Pool
+    pool = mp.Pool(processes= 10)
+    result = pool.map(single_point_pool, molecular_data_list)
+
+
+
+def single_point_pool(val):
+    molecular_data = val[0]
+    file_name = val[1]
+    length = molecular_data.description
+    logging.info("Starting expectation value calculations for length %s.", length)
+    
+    electron_count = molecular_data.n_electrons
+    qubit_count = molecular_data.n_qubits
+    
+    qubit_operator_list = get_qubit_operators(molecular_data)
+    uccsd = initial_hartree_fock(electron_count, qubit_count)
+    unitary = create_uccsd(qubit_operator_list, qubit_count, 't')
+    uccsd.append(unitary, strategy = cirq.InsertStrategy.NEW)
+
+    hamiltonian = get_measurement_hamiltonian(molecular_data)
+    
+    #Simulation
+    options = {'t': 16}
+    simulator = qsimcirq.QSimSimulator(options)
+    cirq.DropEmptyMoments().optimize_circuit(circuit = uccsd)
+
+    qubit_map = get_qubit_map(qubit_count)
+    pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
+
+    bounds = list()
+    for i in range(len(qubit_operator_list)):
+        bounds.append([-numpy.pi, numpy.pi])
+
+    start_time = time.time()
+    
+    optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
+                        , method = 'Nelder-Mead',
+                        args = (simulator, uccsd, pauli_sum, qubit_map),
+                        options = {'disp' : True, 'ftol': 1e-4})
+
+
+    elapsed_time = time.time() - start_time
+
+    logging.info(optimize_result)
+    logging.info("Elapsed time: %s", elapsed_time)
+
+    energy_min = optimize_result.fun
+    nfev = optimize_result.nfev
+    nit = optimize_result.nit
+
+    # Result save.
+    file = open(file_name, "a")
+    file.write("{}, {}, {}, {}, {}, \n".format(energy_min, nfev, 
+                                            nit, elapsed_time, 
+                                            length))
+    file.close()
+    logging.info("Result at %s saved.", length)
+
+    return energy_min, nfev, nit, elapsed_time
+
                         
 
 def main():
     """
     -min molecule \n
     -scan counts molecule \n
-    Molecules: H2, LiH, BeH2, H2O
+    Molecules: H2, LiH, BeH2
     """
     start = time.time()
     #Program args
@@ -159,7 +155,8 @@ def main():
     
     # Calculation modes:
     if min_mode:
-        calculate_minimum(molecule_name, basis, multiplicity, charge)
+        #calculate_minimum(molecule_name, basis, multiplicity, charge)
+        pass
     elif scan_mode:
         calculate_scan(molecule_name, basis, multiplicity, charge, counts)
     else:

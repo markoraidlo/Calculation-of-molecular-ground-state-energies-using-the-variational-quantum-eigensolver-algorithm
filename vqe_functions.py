@@ -9,6 +9,7 @@ from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
                          uccsd_convert_amplitude_format)
 from openfermionpsi4 import run_psi4
 from scipy.optimize import minimize
+from scipy.optimize import shgo
 from sympy import Symbol
 
 
@@ -49,6 +50,7 @@ def get_qubit_operators(molecular_data):
     for fermion_operator in fermion_operator_list:
         qubit_operator_list.append(jordan_wigner(fermion_operator))
 
+    """
     new_list = list()
     for op in qubit_operator_list:
         if len(new_list) == 0:
@@ -62,6 +64,7 @@ def get_qubit_operators(molecular_data):
                     new_list.append(op)
 
     qubit_operator_list = new_list
+    """
  
     return qubit_operator_list
 
@@ -349,11 +352,21 @@ def single_point_calculation(molecular_data):
         bounds.append([-numpy.pi, numpy.pi])
 
     start_time = time.time()
-
+    
     optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
-                        , method = 'TNC', bounds = bounds,
+                        , method = 'Nelder-Mead',
                         args = (simulator, uccsd, pauli_sum, qubit_map),
                         options = {'disp' : True, 'ftol': 1e-4})
+
+    #, bounds = bounds
+    
+    #TNC
+    """
+    optimize_result = shgo(get_expectation_value, bounds = bounds,
+                        args = (simulator, uccsd, pauli_sum, qubit_map),
+                        minimizer_kwargs={'method' : 'TNC',},
+                        options = {'disp' : True, 'ftol': 1e-4,})
+    """
 
     elapsed_time = time.time() - start_time
 
@@ -365,3 +378,4 @@ def single_point_calculation(molecular_data):
     nit = optimize_result.nit
 
     return energy_min, nfev, nit, elapsed_time
+
