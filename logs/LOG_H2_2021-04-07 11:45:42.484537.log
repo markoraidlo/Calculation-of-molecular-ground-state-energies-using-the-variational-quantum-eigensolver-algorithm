@@ -1,0 +1,17 @@
+2021-04-07 11:45:42,484 [INFO] Calculating H2 scan.
+2021-04-07 11:45:42,484 [INFO] Trying psi4 calculation at length 0.1.
+2021-04-07 11:45:44,644 [INFO] Psi4 calculations were succesful.
+2021-04-07 11:45:44,644 [INFO] Starting expectation value calculations.
+2021-04-07 11:45:44,692 [ERROR] shgo() got an unexpected keyword argument 'x0'
+2021-04-07 11:45:44,692 [INFO] New length set: 0.101
+2021-04-07 11:45:44,692 [INFO] Trying psi4 calculation at length 0.101.
+2021-04-07 11:45:46,912 [INFO] Psi4 calculations were succesful.
+2021-04-07 11:45:46,913 [INFO] Starting expectation value calculations.
+2021-04-07 11:45:46,956 [ERROR] shgo() got an unexpected keyword argument 'x0'
+2021-04-07 11:45:46,956 [INFO] New length set: 0.10200000000000001
+2021-04-07 11:45:46,956 [INFO] Trying psi4 calculation at length 0.10200000000000001.
+2021-04-07 11:45:49,117 [INFO] Psi4 calculations were succesful.
+2021-04-07 11:45:49,117 [INFO] Starting expectation value calculations.
+2021-04-07 11:45:49,154 [ERROR] shgo() got an unexpected keyword argument 'x0'
+2021-04-07 11:45:49,154 [INFO] New length set: 0.10300000000000001
+2021-04-07 11:45:49,154 [INFO] Trying psi4 calculation at length 0.10300000000000001.

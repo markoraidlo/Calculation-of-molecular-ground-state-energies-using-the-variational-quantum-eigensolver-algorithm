@@ -1,0 +1,18 @@
+2021-04-22 12:19:29,275 [INFO] Calculating H2 minimum.
+2021-04-22 12:19:31,455 [INFO] Starting expectation value calculations.
+2021-04-22 12:19:32,940 [INFO]  final_simplex: (array([[ 0.02183409, -0.13467413],
+       [ 0.0217959 , -0.13461328],
+       [ 0.02183459, -0.13472607]]), array([-1.13728409, -1.13728409, -1.13728408]))
+           fun: -1.1372840919660792
+       message: 'Optimization terminated successfully.'
+          nfev: 61
+           nit: 29
+        status: 0
+       success: True
+             x: array([ 0.02183409, -0.13467413])
+2021-04-22 12:19:32,941 [INFO] Elapsed time: 1.445910930633545
+2021-04-22 12:19:32,941 [INFO] Electron count: 2
+2021-04-22 12:19:32,941 [INFO] Qubit count: 4
+2021-04-22 12:19:32,941 [INFO] Orbital count: 2
+2021-04-22 12:19:32,941 [INFO] Results saved.
+2021-04-22 12:19:32,941 [INFO] Total programm run time: 3.6658012866973877 s.
