@@ -23,7 +23,10 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
     
     molecular_data_list = list()
 
-    for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
+    #gaps
+    #for length in [0.394, 0.298,  0.201, 1.649, 1.746, 2.228, 2.324, 2.421, 2.517, 2.614, 2.71, 2.807, 2.903, 3.0]:
+    #for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
+    for length in [0.2, 0.297, 0.39299999999999996, 0.49, 0.586, 0.6829999999999999, 0.779, 0.8759999999999999, 0.972, 1.069, 1.166, 1.262, 1.359, 1.455, 1.5519999999999998, 1.6480000000000001, 1.745, 1.841, 1.9380000000000002, 2.0340000000000003, 2.131, 2.228, 2.324, 2.421, 2.517, 2.614, 2.71, 2.807, 2.903, 3.0]:
         length = round(length, 3)
         while True:
             geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
@@ -34,15 +37,15 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                                 ['H', [ 0, 0,  length]],
                                 ['H', [ 0, 0, - length]]],
                         'H2O': [['O', [0, 0, 0]],
-                                ['H', [numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]],
-                                ['H', [- numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]]]}
+                                ['H', [numpy.sin(0.9163) * length,  numpy.cos(0.9163) * length, 0]],
+                                ['H', [- numpy.sin(0.9163) * length,  numpy.cos(0.9163) * length, 0]]]}
 
             geometry = geometry_dict[molecule_name]
 
             try:
                 logging.info("Trying psi4 calculation at length %s.", length)
                 molecular_data = MolecularData(geometry, basis, multiplicity,
-                    charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length), description=str(length))
+                    charge, filename = './data/{}_{}_scan_molecule.data'.format(molecule_name, length), description=str(length))
 
                 molecular_data = run_psi4(molecular_data,
                                         run_scf=True,
@@ -83,7 +86,7 @@ def single_point_pool(val):
     hamiltonian = get_measurement_hamiltonian(molecular_data)
     
     #Simulation
-    options = {'t': 16}
+    options = {'t': 6}
     simulator = qsimcirq.QSimSimulator(options)
     cirq.DropEmptyMoments().optimize_circuit(circuit = uccsd)
 
@@ -99,7 +102,8 @@ def single_point_pool(val):
     optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                         , method = 'Nelder-Mead',
                         args = (simulator, uccsd, pauli_sum, qubit_map),
-                        options = {'disp' : True, 'ftol': 1e-4})
+                        options = {'disp' : True, 'ftol': 1e-4, 
+                        'maxiter': 100000, 'maxfev': 100000})
 
 
     elapsed_time = time.time() - start_time
@@ -138,6 +142,10 @@ def main():
     molecule_name = args[-1]
     if scan_mode:
         counts = int(args[-2])
+
+    #TODO: Thread and process count options -t x -p y
+    #TODO: Scan bounds: -b 
+    #TODO: Help print out
 
     #Logging
     logging.basicConfig(

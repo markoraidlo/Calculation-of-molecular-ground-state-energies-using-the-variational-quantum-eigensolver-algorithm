@@ -8,98 +8,76 @@ from openfermion import (FermionOperator, MolecularData, bravyi_kitaev,
                          get_fermion_operator, jordan_wigner,
                          uccsd_convert_amplitude_format)
 from openfermionpsi4 import run_psi4
-from scipy.optimize import minimize
-from scipy.optimize import shgo
+from scipy.optimize import minimize, shgo
 from sympy import Symbol
 
 
 def get_qubit_operators(molecular_data):
-    """Finds qubit operators for quantum circuit unitary.
-    Molecular Data -> List of qubit operators
+    """Leiab kvantbittoperaatorid psi4 arvutatud andmetest.
 
     Args:
-        molecular_data (MolecularData): MolecularData with psi4 calculation
+        molecular_data (MolecularData): MolecularData, millele on tehtud psi4 arvutused
 
     Returns:
-        list: List of qubit operaors
+        list: Kvantbittoperaatorite järjend
     """
 
-    # GET the single and double amplitudes
+    # Üksik ja kaksik ergastuste amplituudid psi4 arvutusest.
     single_amplitudes = molecular_data.ccsd_single_amps
     double_amplitudes = molecular_data.ccsd_double_amps
 
-    # Convert amplitudes into lists
     if (isinstance(single_amplitudes, numpy.ndarray) or isinstance(double_amplitudes, numpy.ndarray)):
         single_amplitudes_list, double_amplitudes_list = uccsd_convert_amplitude_format( single_amplitudes, double_amplitudes) 
     
     fermion_operator_list = list()
-    #Single excitations
+    # Üksik ergastused.
     for (i, j), t_ik in single_amplitudes_list:
         i, j = int(i), int(j)
         ferm_op = FermionOperator(((i, 1), (j, 0)), 1.) - FermionOperator(((j, 1), (i, 0)), 1.)
         fermion_operator_list.append(ferm_op)
         
-    #Double excitations
+    # Kaksik ergastused.
     for (i, j, k, l), t_ijkl in double_amplitudes_list:
         i, j, k, l = int(i), int(j), int(k), int(l)
         ferm_op = (FermionOperator(((i, 1), (j, 0), (k, 1), (l, 0)), 1.) - FermionOperator(((l, 1), (k, 0), (j, 1), (i, 0)), 1.))
         fermion_operator_list.append(ferm_op)
 
-    #Jordan-Wigner transform
+    # Jordan-Wigneri teisendus.
     qubit_operator_list = list()
     for fermion_operator in fermion_operator_list:
         qubit_operator_list.append(jordan_wigner(fermion_operator))
 
-    """
-    new_list = list()
-    for op in qubit_operator_list:
-        if len(new_list) == 0:
-            new_list.append(op)
-            
-        for checked in new_list:
-            if checked == op:
-                break
-            else:
-                if new_list.index(checked) == len(new_list) - 1:
-                    new_list.append(op)
-
-    qubit_operator_list = new_list
-    """
- 
     return qubit_operator_list
 
 
 def create_uccsd(qubit_operator_list, qubit_count, param):
-    """Converts list of qubit operators into a UCCSD circuit
-    List of qubit operators -> cirq UCCSD circuit 
+    """Loob kvantbittoperaatorite järjendist UCCSD kvantahela.
 
     Args:
-        qubit_operator_list (list[QubitOperator]): List of qubit operators
-        qubit_count (int): Number of qubits needed for circuit
-        param (String)): Optimization parameter name
+        qubit_operator_list (list[QubitOperator]): Kvantbittoperaatorite järjend
+        qubit_count (int): Kvantbittide arv
+        param (String)): Optimiseerimis parameetri tähistus
 
     Returns:
-        Circuit: Circuit of UCCSD
+        Circuit: UCCSD kvantahel
     """
 
     circuit = cirq.Circuit()
-
-    #Different parameter chains
+    # Erinevate kvantbittoperaatorite loomine.
     for i in range(len(qubit_operator_list)):
 
         qubits = cirq.LineQubit.range(qubit_count)
         sub_circuit = cirq.Circuit()
-
         terms_list = qubit_operator_list[i].terms
 
-        #Tundmatu parameeter
+        # Tundmatu parameeteri loomine.
         param_string = param + "{}".format(i)
         temp_param = Symbol(param_string)
 
-        #Different exponents
+        # Erinevate eksponentide loomine.
         for term in terms_list:
 
-            #Basis change
+            # Baasi vahetus.
             moment1 = cirq.Moment()
             moment2 = cirq.Moment()
 
@@ -117,9 +95,8 @@ def create_uccsd(qubit_operator_list, qubit_count, param):
             sub_circuit.append(moment1)
             sub_circuit.append(moment2)
 
-            #Exponent
+            # Eksponendi kvantahela loomine.
             exponent = cirq.Circuit()
-            #Find max qubit:
             max_qubit = 0
             for basis in term:
                 if basis[0] > max_qubit:
@@ -138,7 +115,7 @@ def create_uccsd(qubit_operator_list, qubit_count, param):
 
             sub_circuit.append(exponent)
 
-            #Revert basis change
+            # Baasi vahetus tagasi.
             moment3 = cirq.Moment()
             moment4 = cirq.Moment()
 
@@ -162,15 +139,14 @@ def create_uccsd(qubit_operator_list, qubit_count, param):
 
 
 def initial_hartree_fock(electron_count, qubit_count):
-    """Creates circuit for initial Hartree-Fock state.
-    |11..100...0>
+    """Loob Hartree-Focki põhi oleku |11..100...0>.
 
     Args:
-        electron_count (int): Number of electrons in molecule
-        qubit_count (int): Number of qubits in circuit
+        electron_count (int): Elektronide arv molekulis
+        qubit_count (int): Kvantbittide arv kvantahelas
 
     Returns:
-        Circuit: Start of the UCCSD circuit
+        Circuit: Hartree-Focki põhiseisund UCCSD ahela algusesse
     """
 
     circuit = cirq.Circuit()
@@ -185,13 +161,13 @@ def initial_hartree_fock(electron_count, qubit_count):
 
 
 def get_measurement_hamiltonian(molecular_data):
-    """Creates Hamiltonian for VQE measurements
+    """Loob mõõtmis hamiltoniaani.
 
     Args:
-        molecular_data (MolecularData): MolecularData with psi4 calculation
+        molecular_data (MolecularData): MolecularData koos psi4 arvutustega
 
     Returns:
-        QubitOperator: Hamiltonian
+        QubitOperator: Mõõtmis hamiltoniaan
     """
 
     one_body_integrals = molecular_data.one_body_integrals
@@ -204,25 +180,24 @@ def get_measurement_hamiltonian(molecular_data):
 
 
 def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
-    """Creates one single PauliSum from measurement Hamiltonian.
+    """Loob Pauli summa mõõtmis hamiltoniaanist.
 
     Args:
-        molecule_qubit_hamiltonian (QubitOperator): Hamiltonian
-        qubit_count (int): Number of qubits
+        molecule_qubit_hamiltonian (QubitOperator): Mõõtmis hamiltoniaan
+        qubit_count (int): Kvantbittide arv
 
     Returns:
-        PauliSum: Single PauliSum
+        PauliSum: Pauli summa
     """
     pauli_sum = None
     qubits = cirq.LineQubit.range(qubit_count)
     terms = molecule_qubit_hamiltonian.terms
     
-    #Different parts in Hamiltonian
+    # Erinevad hamiltoniaani osad.
     for term in terms:
-        #Empty string
         pauli_string = None
 
-        #I operator
+        # Identiteedi operaatori erand.
         if len(term) == 0:
             if pauli_sum is  None:
                 pauli_sum = cirq.I(qubits[0]) * terms[term].real
@@ -231,12 +206,13 @@ def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
             
             continue
         
+        # Kvantbittoperaatorite lisamine Pauli summasse.
         for basis in term:
             if basis[1] == 'X':
-                #If pauli_string doesnt contain a gate
+                # Kui pauli_string-i pole lisatud väravat.
                 if pauli_string is None:
                     pauli_string = cirq.X(qubits[basis[0]])
-                #If it does
+                # Kui värav on juba olemas.
                 else:
                     pauli_string = pauli_string * cirq.X(qubits[basis[0]])
 
@@ -252,7 +228,7 @@ def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
                 else:
                     pauli_string = pauli_string * cirq.Z(qubits[basis[0]])
 
-
+        # Kõik kokku liita üheks Pauli summaks.
         if pauli_sum is not None:
             pauli_sum += pauli_string * terms[term].real 
         else:
@@ -262,11 +238,11 @@ def get_measurement_pauli_sum(molecule_qubit_hamiltonian, qubit_count):
 
 
 def get_qubit_map(qubit_count):
-    """Creates qubit map for expectation_from_state_vector() function.
-    Maps qubit[j] to integer j.
+    """Loob expectation_from_state_vector() funktsiooni jaoks qubit_map-i.
+    kvantbitt[j] -> arv j.
 
     Args:
-        qubit_count (int): Number of qubtis needed to map
+        qubit_count (int): Kvantbittide arv
 
     Returns:
         [dict]: {LineQubit: int} Qubitmap
@@ -283,93 +259,87 @@ def get_qubit_map(qubit_count):
 
 
 def get_expectation_value(x, *args):
-    """For use with scipy minimize. 
-    Calculates expectation value for given parameters.
+    """Kasutada koos scipy.minimize optimiseerijaga.
+    Leiab ahelale, hamiltoniaanile ja parameetritele vastava keskväärtuse.
 
     Args:
-        x (list): List of parameters for circuit
+        x (list): Parameetrite järjend
         *args (): simulator, UCCSD, pauli_sum, qubit_map
 
     Returns:
-        float: Expectation value.
+        float: Keskväärtus
     """
     start_time = time.time()
 
     assert len(args) == 4
     simulator, uccsd, pauli_sum, qubit_map = args
 
+    # Parameetrite lisamine kvantahelale.
     resolver_dict = dict()
     for k in range(len(x)):
         resolver_dict.update({'t{}'.format(k): x[k]})
-
     resolver = cirq.ParamResolver(resolver_dict)
 
-    #Main simulation call
+    # Qsim simuleerib kvantahela.
     result = simulator.simulate(uccsd, resolver)
     state_vector = result.final_state_vector
 
     norm = numpy.linalg.norm(state_vector)
     state_vector = state_vector / norm
 
+    # Keskväärtuse leiab kvantahela olekuvektori ja Pauli summaga.
     expectation_value = pauli_sum.expectation_from_state_vector(state_vector, qubit_map)
 
     elapsed_time = time.time() - start_time
+    # Aja logimine kui on vaja.
     #logging.info("get_expectation_value: time - %s s; value - %s", elapsed_time, expectation_value.real)
 
     return expectation_value.real
 
 
-# See ka ära muuta sest pole vaja enam paraliseerida
-def single_point_calculation(molecular_data):
-    """Does the main work of calling different functions
-    Takes molecular data and outputs results
+def single_point_calculation(values):
+    """Arvutab ühe punkti miinimum energia väärtuse
 
     Args:
-        molecular_data ([type]): [description]
+        values (List): [MolecularData, faili_nimi]
+
+    Returns:
+        List: Leitud väärtused
     """
-    logging.info("Starting expectation value calculations.")
+    molecular_data = values[0]
+    file_name = values[1]
+    length = molecular_data.description
+    logging.info("Starting expectation value calculations for length %s.", length)
     
     electron_count = molecular_data.n_electrons
     qubit_count = molecular_data.n_qubits
     
+    # Kvantahela loomine.
     qubit_operator_list = get_qubit_operators(molecular_data)
     uccsd = initial_hartree_fock(electron_count, qubit_count)
     unitary = create_uccsd(qubit_operator_list, qubit_count, 't')
     uccsd.append(unitary, strategy = cirq.InsertStrategy.NEW)
 
+    # Mõõtmis hamiltoniaani loomine.
     hamiltonian = get_measurement_hamiltonian(molecular_data)
-
-    ############ Simulation
-    options = {'t': 64}
+    qubit_map = get_qubit_map(qubit_count)
+    pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
+    
+    # Simulaatori seaded.
+    options = {'t': 6}
     simulator = qsimcirq.QSimSimulator(options)
     cirq.DropEmptyMoments().optimize_circuit(circuit = uccsd)
 
-    qubit_map = get_qubit_map(qubit_count)
-    pauli_sum = get_measurement_pauli_sum(hamiltonian, qubit_count)
-
-    bounds = list()
-    for i in range(len(qubit_operator_list)):
-        bounds.append([-numpy.pi, numpy.pi])
-
     start_time = time.time()
     
+    # Miinimumi leidmine.
     optimize_result = minimize(get_expectation_value, x0 = numpy.zeros(len(qubit_operator_list))
                         , method = 'Nelder-Mead',
                         args = (simulator, uccsd, pauli_sum, qubit_map),
-                        options = {'disp' : True, 'ftol': 1e-4})
-
-    #, bounds = bounds
-    
-    #TNC
-    """
-    optimize_result = shgo(get_expectation_value, bounds = bounds,
-                        args = (simulator, uccsd, pauli_sum, qubit_map),
-                        minimizer_kwargs={'method' : 'TNC',},
-                        options = {'disp' : True, 'ftol': 1e-4,})
-    """
+                        options = {'disp' : True, 'ftol': 1e-4, 
+                        'maxiter': 100000, 'maxfev': 100000})
 
     elapsed_time = time.time() - start_time
-
     logging.info(optimize_result)
     logging.info("Elapsed time: %s", elapsed_time)
 
@@ -377,5 +347,12 @@ def single_point_calculation(molecular_data):
     nfev = optimize_result.nfev
     nit = optimize_result.nit
 
-    return energy_min, nfev, nit, elapsed_time
+    # Tulemuste salvestamine faili.
+    file = open(file_name, "a")
+    file.write("{}, {}, {}, {}, {}, \n".format(energy_min, nfev, 
+                                            nit, elapsed_time, 
+                                            length))
+    file.close()
+    logging.info("Result at %s saved.", length)
 
+    return energy_min, nfev, nit, elapsed_time

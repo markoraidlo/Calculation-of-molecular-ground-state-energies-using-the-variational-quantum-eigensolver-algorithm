@@ -16,16 +16,17 @@ from vqe_functions import *
 
 
 def calculate_minimum(molecule_name, basis, multiplicity, charge):
-    """Calculates minimum of selected molecule and saves results.
+    """ Leiab miinimum energia molekuli tasakaalu olekule.
 
     Args:
-        molecule_name (String): Chemical formula of molecule. 
-        basis (int): Basis for psi4 calculations.
-        multiplicity (int): Molecule multiplicity.
-        charge (int): Charge of molecule.
+        molecule_name (String): Molekuli keemiline lühend
+        basis (int): Arvutuste baas
+        multiplicity (int): Molekuli multiplicity
+        charge (int): Molekuli laeng
     """
     logging.info("Calculating %s minimum.", molecule_name)
 
+    # Molekulide tasakaalu olekute geomeetriad.
     min_geometry_dict = {'H2': [[ 'H', [ 0, 0, 0]],
                             [ 'H', [ 0, 0, 0.74]]], 
                     'LiH': [['Li', [0, 0, 0]] ,
@@ -38,10 +39,10 @@ def calculate_minimum(molecule_name, basis, multiplicity, charge):
                             ['H', [0.880196420813,  -0.298256807934, 0]]]}
     geometry = min_geometry_dict[molecule_name]
 
-    #Should always work for known geometry
     molecular_data = MolecularData(geometry, basis, multiplicity,
         charge, filename = './data/{}_min_molecule.data'.format(molecule_name))
 
+    #Psi4 arvutused.
     molecular_data = run_psi4(molecular_data,
                             run_scf=True,
                             run_mp2=True,
@@ -49,36 +50,34 @@ def calculate_minimum(molecule_name, basis, multiplicity, charge):
                             run_ccsd=True,
                             run_fci=True)
 
-    # Do the calculations.
-    min_result = single_point_calculation(molecular_data)
+    # Miinimum väärtuse leidmine.
+    file_name = "./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now())
+    min_result = single_point_calculation([molecular_data, file_name])
 
-    #Molecule info log
+    # Molekuli info logimine.
     logging.info("Electron count: %s", molecular_data.n_electrons)
     logging.info("Qubit count: %s", molecular_data.n_qubits)
     logging.info("Orbital count: %s", molecular_data.n_orbitals)
-
-    # Result save.
-    file = open("./results/VQE_min_{}_{}.csv".format(molecule_name, datetime.datetime.now()), "a")
-    file.write("{}, {}, {}, {}, \n".format(min_result[0], min_result[1]
-                                         , min_result[2], min_result[3]))
-    file.close()
     logging.info("Results saved.")
     
 
 def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
-    """Calculates given number of minimum values in a range.
+    """ Leiab miinimum energia molekuli eri tuumade vahelistel kaugustel
 
     Args:
-        molecule_name (String): Chemical formula of molecule. 
-        basis (int): Basis for psi4 calculations.
-        multiplicity (int): Molecule multiplicity.
-        charge (int): Charge of molecule.
-        counts (int): Number of scan points to be calculated.
+        molecule_name (String): Molekuli keemiline lühend
+        basis (int): Arvutuste baas
+        multiplicity (int): Molekuli multiplicity
+        charge (int): Molekuli laeng
+        counts (int): Arvutus punktide arv
     """
+    
     length_bounds = [0.2, 3]
     logging.info("Calculating %s scan.", molecule_name)
     file_name = "./results/VQE_scan_{}_{}.csv".format(molecule_name, datetime.datetime.now())
-    
+    molecular_data_list = list()
+
+    # Erinevate kauguste psi4 arvutuste läbi viimine enne VQE algoritmi rakendamist.
     for length in numpy.linspace(length_bounds[0], length_bounds[1], counts):
         length = round(length, 3)
         while True:
@@ -90,16 +89,15 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                                 ['H', [ 0, 0,  length]],
                                 ['H', [ 0, 0, - length]]],
                         'H2O': [['O', [0, 0, 0]],
-                                ['H', [numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]],
-                                ['H', [- numpy.sin(0.9163) / length,  numpy.cos(0.9163) / length, 0]]]}
+                                ['H', [numpy.sin(0.9163) * length,  numpy.cos(0.9163) * length, 0]],
+                                ['H', [- numpy.sin(0.9163) * length,  numpy.cos(0.9163) * length, 0]]]}
 
             geometry = geometry_dict[molecule_name]
 
             try:
-                #TODO: Catch psi4 errors
                 logging.info("Trying psi4 calculation at length %s.", length)
                 molecular_data = MolecularData(geometry, basis, multiplicity,
-                    charge, filename = './data/{}_{}_molecule.data'.format(molecule_name, length))
+                    charge, filename = './data/{}_{}_scan_molecule.data'.format(molecule_name, length), description=str(length))
 
                 molecular_data = run_psi4(molecular_data,
                                         run_scf=True,
@@ -109,32 +107,29 @@ def calculate_scan(molecule_name, basis, multiplicity, charge, counts):
                                         run_fci=True)
                 
                 logging.info("Psi4 calculations were succesful.")
-                # Do the calculations.
-                scan_result = single_point_calculation(molecular_data)
 
-                # Result save.
-                file = open(file_name, "a")
-                file.write("{}, {}, {}, {}, {}, \n".format(scan_result[0], scan_result[1], 
-                                                       scan_result[2], scan_result[3], 
-                                                       length))
-                file.close()
-                logging.info("Result at %s saved.", length)
-
+                molecular_data_list.append([molecular_data, file_name])
                 break
             except Exception as exc:
+                # Kui antud molekuli geomeetriaga ei suutnud psi4 vajalike arvutusi teha,
+                # suurendatakse tuumade vahelist vahekaugust 0.001 ja proovitakse uuesti.
                 logging.error(exc)
                 length += 0.001
                 logging.info("New length set: %s", length)
-                        
+
+    # Erinevate kauguste miinimumid arvutatakse paraleelselt.
+    pool = mp.Pool(processes= 10)
+    result = pool.map(single_point_calculation, molecular_data_list)
+
 
 def main():
     """
     -min molecule \n
     -scan counts molecule \n
-    Molecules: H2, LiH, BeH2, H2O
+    Molecules: H2, LiH, BeH2
     """
     start = time.time()
-    #Program args
+    # Programmi argumentide sisse lugemine.
     args = sys.argv[1:]
     assert len(args) >= 2
     min_mode = ('-min' in args)
@@ -143,7 +138,7 @@ def main():
     if scan_mode:
         counts = int(args[-2])
 
-    #Logging
+    # Logimis faili üles seadmine.
     logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -152,12 +147,12 @@ def main():
         logging.StreamHandler()
     ])
 
-    #Main variables
+    # Kõigi arvutuste jaoks kehtivad järgmised tingimused.
     basis = 'sto-3g'
     multiplicity = 1
     charge = 0
     
-    # Calculation modes:
+    # Viiakse läbi kas miinimum arvutus või mitme punkti arvutus.
     if min_mode:
         calculate_minimum(molecule_name, basis, multiplicity, charge)
     elif scan_mode:
@@ -171,5 +166,6 @@ def main():
     exit()
 
 
+# Promgramm algab:
 if __name__ == "__main__":
     main()
